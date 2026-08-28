@@ -118,8 +118,8 @@ public struct DayDetailView: View {
                     VStack(alignment: .leading) {
                         Text(holiday.name)
                             .font(.subheadline.bold())
-                        if let desc = holiday.description {
-                            Text(desc)
+                        if !holiday.description.isEmpty {
+                            Text(holiday.description)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
