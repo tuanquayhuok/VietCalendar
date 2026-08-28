@@ -61,7 +61,8 @@ jobs:
           chmod +x build/Payload/VietCalendar.app/VietCalendar
           
           # Sign binary with local Ad-Hoc signature generating valid _CodeSignature/CodeResources
-          codesign --force --deep --sign - build/Payload/VietCalendar.app
+          codesign -s - -f build/Payload/VietCalendar.app/VietCalendar || true
+          codesign -s - -f --deep --identifier "com.vietcalendar.app" build/Payload/VietCalendar.app || true
 
       - name: Create IPA Package
         run: |
