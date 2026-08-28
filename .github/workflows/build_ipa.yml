@@ -28,16 +28,20 @@ jobs:
           SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
           
           SWIFT_FILES=$(find VietCalendar -name "*.swift")
-          echo "Compiling Swift files..."
-          echo "$SWIFT_FILES"
+          echo "### Compiling Swift files" >> $GITHUB_STEP_SUMMARY
           
-          xcrun swiftc \
+          if ! xcrun swiftc \
             -target arm64-apple-ios17.0 \
             -sdk "$SDK_PATH" \
             -O \
             -parse-as-library \
             $SWIFT_FILES \
-            -o build/Payload/VietCalendar.app/VietCalendar
+            -o build/Payload/VietCalendar.app/VietCalendar 2>&1 | tee /tmp/swiftc_err.log; then
+            echo "```" >> $GITHUB_STEP_SUMMARY
+            cat /tmp/swiftc_err.log >> $GITHUB_STEP_SUMMARY
+            echo "```" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
           
           # Normalize Info.plist to Apple XML standard
           plutil -convert xml1 VietCalendar/Info.plist -o build/Payload/VietCalendar.app/Info.plist
