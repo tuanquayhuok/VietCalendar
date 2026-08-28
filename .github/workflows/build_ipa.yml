@@ -28,20 +28,15 @@ jobs:
           SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
           
           SWIFT_FILES=$(find VietCalendar -name "*.swift")
-          echo "### Compiling Swift files" >> $GITHUB_STEP_SUMMARY
+          echo "Compiling Swift files..."
           
-          if ! xcrun swiftc \
-            -target arm64-apple-ios17.0 \
+          xcrun swiftc \
+            -target arm64-apple-ios16.0 \
             -sdk "$SDK_PATH" \
             -O \
             -parse-as-library \
             $SWIFT_FILES \
-            -o build/Payload/VietCalendar.app/VietCalendar 2>&1 | tee /tmp/swiftc_err.log; then
-            echo "```" >> $GITHUB_STEP_SUMMARY
-            cat /tmp/swiftc_err.log >> $GITHUB_STEP_SUMMARY
-            echo "```" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
+            -o build/Payload/VietCalendar.app/VietCalendar
           
           # Normalize Info.plist to Apple XML standard
           plutil -convert xml1 VietCalendar/Info.plist -o build/Payload/VietCalendar.app/Info.plist
@@ -56,12 +51,15 @@ jobs:
             xcrun actool VietCalendar/Resources/Assets.xcassets \
               --compile build/Payload/VietCalendar.app \
               --platform iphoneos \
-              --minimum-deployment-target 17.0 \
+              --minimum-deployment-target 16.0 \
               --app-icon AppIcon \
               --output-format human-readable-text || true
           fi
           
-          # Fix POSIX permissions for 3uTools & Sideloadly compatibility
+          # Ad-hoc Code Signing (Allows Sideloadly, Scarlet, TrollStore, 3uTools to re-sign or run directly)
+          codesign --force --deep --sign - build/Payload/VietCalendar.app
+          
+          # Fix POSIX permissions
           chmod -R 755 build/Payload/VietCalendar.app
 
       - name: Package Payload into Signed-Ready IPA
