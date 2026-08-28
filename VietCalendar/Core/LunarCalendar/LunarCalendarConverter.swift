@@ -11,6 +11,12 @@ public final class LunarCalendarConverter {
     
     private init() {}
     
+    public func getYearCanChi(year: Int) -> String {
+        let can = Self.canNames[(year + 6) % 10]
+        let chi = Self.chiNames[(year + 8) % 12]
+        return "\(can) \(chi)"
+    }
+    
     // MARK: - 1. Julian Day Calculations
     
     /// Tính số ngày Julius (Julian Day Number) từ ngày/tháng/năm dương lịch
@@ -63,59 +69,54 @@ public final class LunarCalendarConverter {
         let Mpr = 306.0253 + 385.81691806 * Double(k) + 0.0107306 * T2 + 0.00001236 * T3
         let F = 21.2964 + 390.67050646 * Double(k) - 0.0016528 * T2 - 0.00000239 * T3
         
-        var C1 = (0.1734 - 0.000393 * T) * sin(M * dr)
-        C1 += 0.0021 * sin(2.0 * dr * M)
-        C1 -= 0.4068 * sin(Mpr * dr)
-        C1 += 0.0161 * sin(2.0 * dr * Mpr)
-        C1 -= 0.0004 * sin(3.0 * dr * Mpr)
-        C1 += 0.0104 * sin(2.0 * dr * F)
-        C1 -= 0.0051 * sin((M + Mpr) * dr)
-        C1 -= 0.0074 * sin((M - Mpr) * dr)
-        C1 += 0.0004 * sin((2.0 * F + M) * dr)
-        C1 -= 0.0004 * sin((2.0 * F - M) * dr)
-        C1 -= 0.0006 * sin((2.0 * F + Mpr) * dr)
-        C1 += 0.0010 * sin((2.0 * F - Mpr) * dr)
-        C1 += 0.0005 * sin((2.0 * Mpr + M) * dr)
+        var C1 = (0.1734 - 0.000393 * T) * sin(M * dr) + 0.0021 * sin(2.0 * M * dr)
+        C1 -= 0.4068 * sin(Mpr * dr) + 0.0161 * sin(2.0 * Mpr * dr)
+        C1 -= 0.0004 * sin(3.0 * Mpr * dr)
+        C1 += 0.0104 * sin(2.0 * F * dr) - 0.0051 * sin((M + Mpr) * dr)
+        C1 -= 0.0074 * sin((M - Mpr) * dr) + 0.0004 * sin((2.0 * F + M) * dr)
+        C1 -= 0.0004 * sin((2.0 * F - M) * dr) - 0.0006 * sin((2.0 * F + Mpr) * dr)
+        C1 += 0.0010 * sin((2.0 * F - Mpr) * dr) + 0.0005 * sin((M + 2.0 * Mpr) * dr)
         
-        var deltaT: Double = 0.0
+        var deltat: Double = 0
         if T < -11.0 {
-            deltaT = 0.001 + 0.000839 * T + 0.0002261 * T2 - 0.00000845 * T3 - 0.000000081 * T * T3
+            deltat = 0.001 + 0.000839 * T + 0.0002261 * T2 - 0.00000845 * T3 - 0.00000061 * T * T3
         } else {
-            deltaT = -0.000278 + 0.000265 * T + 0.000262 * T2
+            deltat = -0.000078 + 0.000287 * T + 0.000149 * T2 - 0.000000238 * T3 - 0.00000123 * T * T3
         }
         
-        let JdNew = Jd1 + C1 - deltaT
+        let JdNew = Jd1 + C1 - deltat
         return floor(JdNew + 0.5 + timeZone / 24.0)
     }
     
-    /// Tính vị trí kinh độ mặt trời (Sun longitude in radians) tại ngày Julius
     public func getSunLongitude(dayNumber: Double, timeZone: Double) -> Double {
-        let T = (dayNumber - 0.5 - timeZone / 24.0 - 2451545.0) / 36525.0
+        let T = (dayNumber - 2451545.5 - timeZone / 24.0) / 36525.0
         let T2 = T * T
         let dr = Double.pi / 180.0
-        let L0 = 280.46645 + 36000.76983 * T + 0.0003032 * T2
         let M = 357.52910 + 35999.05030 * T - 0.0001559 * T2 - 0.00000048 * T * T2
-        var C = (1.914600 - 0.004817 * T - 0.000014 * T2) * sin(M * dr)
-        C += (0.019993 - 0.000101 * T) * sin(2.0 * M * dr)
-        C += 0.000290 * sin(3.0 * M * dr)
-        var theta = L0 + C
-        theta = theta.truncatingRemainder(dividingBy: 360.0)
-        if theta < 0 { theta += 360.0 }
-        return theta * dr
-    }
-    
-    private func getSunMajorTerm(dayNumber: Double, timeZone: Double) -> Int {
-        let longitude = getSunLongitude(dayNumber: dayNumber, timeZone: timeZone)
-        return Int(floor(longitude / (Double.pi / 6.0)))
+        let L0 = 280.46645 + 36000.76983 * T + 0.0003032 * T2
+        var DL = (1.914600 - 0.004817 * T - 0.000014 * T2) * sin(M * dr)
+        DL += (0.019993 - 0.000101 * T) * sin(2.0 * M * dr) + 0.000290 * sin(3.0 * M * dr)
+        var L = L0 + DL
+        L = L * dr
+        L = L - Double.pi * 2.0 * floor(L / (Double.pi * 2.0))
+        return L
     }
     
     private func getLunarMonth11(year: Int, timeZone: Double) -> Double {
-        var off = jdFromDate(day: 31, month: 12, year: year) - 2415021.076998695
-        let k = Int(floor(off / 29.530588853))
+        let off = jdFromDate(day: 31, month: 12, year: year) - 2415021.076998695
+        var k = Int(floor(off / 29.530588853))
         var nm = getNewMoonDay(k: k, timeZone: timeZone)
-        let sunLong = getSunMajorTerm(dayNumber: nm, timeZone: timeZone)
-        if sunLong >= 9 {
-            nm = getNewMoonDay(k: k - 1, timeZone: timeZone)
+        var sunLong = getSunLongitude(dayNumber: nm, timeZone: timeZone)
+        let sunLongDeg = sunLong * 180.0 / Double.pi
+        
+        if sunLongDeg >= 270.0 && sunLongDeg < 360.0 {
+            // Sau Đông Chí
+        } else if sunLongDeg >= 0.0 && sunLongDeg < 90.0 {
+            // Sau Xuân Phân
+        } else {
+            k -= 1
+            nm = getNewMoonDay(k: k, timeZone: timeZone)
+            sunLong = getSunLongitude(dayNumber: nm, timeZone: timeZone)
         }
         return nm
     }
@@ -124,68 +125,65 @@ public final class LunarCalendarConverter {
         var k = Int(floor((a11 - 2415021.076998695) / 29.530588853 + 0.5))
         var last = 0
         var i = 1
-        var arc = getSunMajorTerm(dayNumber: a11, timeZone: timeZone)
+        var arc = getSunLongitude(dayNumber: a11, timeZone: timeZone)
+        var arcDeg = Int(floor(arc * 180.0 / Double.pi / 30.0))
+        
         while i <= 14 {
-            let nextNm = getNewMoonDay(k: k + i, timeZone: timeZone)
-            let nextArc = getSunMajorTerm(dayNumber: nextNm, timeZone: timeZone)
-            if nextArc == arc {
+            k += 1
+            let nm = getNewMoonDay(k: k, timeZone: timeZone)
+            let sunLong = getSunLongitude(dayNumber: nm, timeZone: timeZone)
+            let sunDeg = Int(floor(sunLong * 180.0 / Double.pi / 30.0))
+            if sunDeg == arcDeg {
                 last = i
+                break
             }
-            arc = nextArc
+            arcDeg = sunDeg
             i += 1
         }
         return last
     }
     
-    // MARK: - 3. Can Chi Helper
+    // MARK: - 3. Can Chi & Sexagenary Cycle Calculations
     
-    private func calculateCanChi(jd: Double, lunarYear: Int, lunarMonth: Int) -> (canDay: String, chiDay: String, canMonth: String, chiMonth: String, canYear: String, chiYear: String) {
-        let canDayIndex = (Int(jd) + 9) % 10
-        let chiDayIndex = (Int(jd) + 1) % 12
+    public func calculateCanChi(jd: Double, lunarYear: Int, lunarMonth: Int) -> (canDay: String, chiDay: String, canMonth: String, chiMonth: String, canYear: String, chiYear: String) {
+        let canDay = Self.canNames[Int(floor(jd + 9.5)) % 10]
+        let chiDay = Self.chiNames[Int(floor(jd + 1.5)) % 12]
         
-        let canYearIndex = (lunarYear + 6) % 10
-        let chiYearIndex = (lunarYear + 8) % 12
+        let canYear = Self.canNames[(lunarYear + 6) % 10]
+        let chiYear = Self.chiNames[(lunarYear + 8) % 12]
         
-        let canMonthIndex = (lunarYear * 12 + lunarMonth + 3) % 10
-        let chiMonthIndex = (lunarMonth + 1) % 12
+        let canMonth = Self.canNames[(lunarYear * 12 + lunarMonth + 3) % 10]
+        let chiMonth = Self.chiNames[(lunarMonth + 1) % 12]
         
-        return (
-            canDay: Self.canNames[canDayIndex],
-            chiDay: Self.chiNames[chiDayIndex],
-            canMonth: Self.canNames[canMonthIndex],
-            chiMonth: Self.chiNames[chiMonthIndex],
-            canYear: Self.canNames[canYearIndex],
-            chiYear: Self.chiNames[chiYearIndex]
-        )
+        return (canDay, chiDay, canMonth, chiMonth, canYear, chiYear)
     }
     
     // MARK: - 4. Public API: Solar -> Lunar
     
-    /// Chuyển ngày Dương Lịch thành Âm Lịch
+    /// Chuyển đổi Ngày/Tháng/Năm Dương Lịch sang Âm Lịch (LunarDate)
     public func convertSolarToLunar(day: Int, month: Int, year: Int) -> LunarDate {
         let currentJd = jdFromDate(day: day, month: month, year: year)
-        var k = Int(floor((currentJd - 2415021.076998695) / 29.530588853))
+        let k = Int(floor((currentJd - 2415021.076998695) / 29.530588853))
         var monthStart = getNewMoonDay(k: k + 1, timeZone: timeZoneOffset)
         
         if monthStart > currentJd {
             monthStart = getNewMoonDay(k: k, timeZone: timeZoneOffset)
-        } else {
-            k += 1
         }
         
-        var a11 = getLunarMonth11(year: year, timeZone: timeZoneOffset)
-        var b11 = a11
-        var lunarYear = year
+        let a11 = getLunarMonth11(year: year, timeZone: timeZoneOffset)
+        let b11 = getLunarMonth11(year: year + 1, timeZone: timeZoneOffset)
         
-        if a11 >= monthStart {
-            lunarYear = year - 1
-            a11 = getLunarMonth11(year: lunarYear, timeZone: timeZoneOffset)
+        var lunarYear = year
+        if currentJd >= a11 {
+            lunarYear = year
         } else {
-            b11 = getLunarMonth11(year: year + 1, timeZone: timeZoneOffset)
-            if b11 <= monthStart {
-                lunarYear = year + 1
-                a11 = b11
-            }
+            lunarYear = year - 1
+        }
+        
+        var totalMonths = Int(floor((b11 - a11) / 29.0))
+        var leapMonthIndex = 0
+        if totalMonths > 12 {
+            leapMonthIndex = getLeapMonthOffset(a11: a11, timeZone: timeZoneOffset)
         }
         
         let lunarDay = Int(currentJd - monthStart + 1)
@@ -193,10 +191,12 @@ public final class LunarCalendarConverter {
         var lunarMonth = diff + 11
         var isLeap = false
         
-        if floor((b11 - a11) / 29.0) > 12.0 {
-            let leapMonthIndex = getLeapMonthOffset(a11: a11, timeZone: timeZoneOffset)
-            let monthIndex = diff
-            if monthIndex >= leapMonthIndex {
+        if totalMonths > 12 && diff >= leapMonthIndex {
+            if diff == leapMonthIndex {
+                isLeap = true
+                lunarMonth = leapMonthIndex + 10
+            } else {
+                let monthIndex = diff - 1
                 lunarMonth = monthIndex + 10
                 if monthIndex == leapMonthIndex {
                     isLeap = true
