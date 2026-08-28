@@ -28,10 +28,10 @@ jobs:
       - name: Build APK with Gradle
         run: |
           cd app_adr
-          gradle assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
+          gradle assembleDebug --no-daemon -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: VietCalendar-Android-APK
-          path: app_adr/app/build/outputs/apk/release/*.apk
+          path: app_adr/app/build/outputs/apk/debug/*.apk
