@@ -83,7 +83,7 @@ public struct DayDetailView: View {
         .cornerRadius(16)
     }
     
-    private func solarTermCard(_ term: String) -> some View {
+    private func solarTermCard(_ term: SolarTerm) -> some View {
         HStack {
             Image(systemName: "leaf.fill")
                 .font(.title2)
@@ -92,9 +92,12 @@ public struct DayDetailView: View {
                 Text("Tiết Khí Hiện Tại")
                     .font(.caption)
                     .foregroundColor(.secondary)
-                Text(term)
+                Text(term.name)
                     .font(.headline.bold())
                     .foregroundColor(.vnEmerald)
+                Text(term.description)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
             }
             Spacer()
         }

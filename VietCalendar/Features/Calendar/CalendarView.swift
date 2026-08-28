@@ -205,17 +205,19 @@ public struct CalendarView: View {
                         .clipShape(Circle())
                 }
                 
-                Button(langManager.tr("Hôm nay", en: "Today")) {
+                Button(action: {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
                         viewModel.selectToday()
                     }
+                }) {
+                    Text(langManager.tr("Hôm nay", en: "Today"))
+                        .font(.caption.bold())
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(themeManager.selectedAccent.color.opacity(0.14))
+                        .foregroundColor(themeManager.selectedAccent.color)
+                        .clipShape(Capsule())
                 }
-                .font(.caption.bold())
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(themeManager.selectedAccent.color.opacity(0.14))
-                .foregroundColor(themeManager.selectedAccent.color)
-                .clipShape(Capsule())
                 
                 Button(action: {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
@@ -337,7 +339,7 @@ public struct CalendarView: View {
                 HStack {
                     Image(systemName: "leaf.fill")
                         .foregroundColor(.vnEmerald)
-                    Text("Tiết khí: \(term)")
+                    Text("Tiết khí: \(term.name)")
                         .font(.caption.bold())
                         .foregroundColor(.vnEmerald)
                 }

@@ -44,7 +44,7 @@ public struct DayCellView: View {
                             .fill(Color.vnGold)
                             .frame(width: 4, height: 4)
                     }
-                    if day.solarTerm != nullTermPlaceholder {
+                    if day.solarTerm != nil {
                         Circle()
                             .fill(Color.vnEmerald)
                             .frame(width: 3.5, height: 3.5)
@@ -60,8 +60,6 @@ public struct DayCellView: View {
         }
         .buttonStyle(.plain)
     }
-    
-    private var nullTermPlaceholder: String { "" }
     
     private var solarDayColor: Color {
         if isSelected {
