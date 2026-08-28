@@ -20,25 +20,24 @@ jobs:
       - name: Generate Xcode Project
         run: xcodegen generate
 
-      - name: Build Application Archive
+      - name: Build Application Bundle
         run: |
-          xcodebuild clean archive \
+          xcodebuild build \
             -project VietCalendar.xcodeproj \
             -scheme VietCalendar \
             -configuration Release \
-            -destination "generic/platform=iOS" \
-            -archivePath build/VietCalendar.xcarchive \
-            CODE_SIGN_STYLE="Manual" \
-            CODE_SIGN_IDENTITY="-" \
+            -sdk iphoneos \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=YES \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES \
-            DEVELOPMENT_TEAM=""
+            CODE_SIGN_IDENTITY="" \
+            EXPANDED_CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE_SPECIFIER=""
 
       - name: Package Payload and Create IPA
         run: |
           mkdir -p build/Payload
-          cp -R build/VietCalendar.xcarchive/Products/Applications/VietCalendar.app build/Payload/
+          find build/DerivedData/Build/Products/Release-iphoneos -name "*.app" -maxdepth 1 -exec cp -r {} build/Payload/ \;
           cd build
           zip -qr VietCalendar.ipa Payload
           cd ..
