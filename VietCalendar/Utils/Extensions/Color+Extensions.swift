@@ -1,4 +1,5 @@
 ﻿import SwiftUI
+import UIKit
 
 extension Color {
     init(hex: String) {
@@ -29,5 +30,5 @@ extension Color {
     public static let vnGold = Color(hex: "#F59E0B")
     public static let vnEmerald = Color(hex: "#10B981")
     public static let vnBlue = Color(hex: "#2563EB")
-    public static let vnSurface = Color(UIColor.secondarySystemBackground)
+    public static let vnSurface = Color(uiColor: .secondarySystemBackground)
 }
