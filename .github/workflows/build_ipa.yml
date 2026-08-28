@@ -27,6 +27,7 @@ jobs:
 
       - name: Build for iOS Device
         run: |
+          set -o pipefail
           xcodebuild build \
             -project VietCalendar.xcodeproj \
             -scheme VietCalendar \
@@ -37,7 +38,7 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             PROVISIONING_PROFILE="" \
-            PROVISIONING_PROFILE_SPECIFIER=""
+            PROVISIONING_PROFILE_SPECIFIER="" 2>&1 | tee build.log
 
       - name: Create IPA Package
         run: |
