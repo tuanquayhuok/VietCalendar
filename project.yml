@@ -14,7 +14,11 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.vietcalendar.app
-        INFOPLIST_FILE: VietCalendar/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: "Lịch Việt"
+        INFOPLIST_KEY_CFBundleName: "VietCalendar"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
+        GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGNING_ALLOWED: NO
         CODE_SIGNING_REQUIRED: NO
