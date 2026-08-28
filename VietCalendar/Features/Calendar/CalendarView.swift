@@ -16,6 +16,8 @@ public struct CalendarView: View {
     @State private var showingAddEvent = false
     @State private var showingDetailSheet = false
     
+    public init() {}
+    
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
     private let weekdayHeadersVi = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
     private let weekdayHeadersEn = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]

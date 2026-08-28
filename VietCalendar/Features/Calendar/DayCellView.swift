@@ -7,6 +7,12 @@ public struct DayCellView: View {
     
     @ObservedObject private var themeManager = ThemeManager.shared
     
+    public init(day: CalendarDay, isSelected: Bool, onSelect: @escaping () -> Void) {
+        self.day = day
+        self.isSelected = isSelected
+        self.onSelect = onSelect
+    }
+    
     public var body: some View {
         Button(action: {
             #if os(iOS)
