@@ -3,7 +3,10 @@
 public struct EventListView: View {
     @ObservedObject private var eventService = EventService.shared
     @State private var showingAddEvent = false
+    @State private var editingEvent: UserEvent? = nil
     @State private var searchText = ""
+    
+    public init() {}
     
     public var body: some View {
         NavigationStack {
@@ -50,6 +53,22 @@ public struct EventListView: View {
                             
                             Spacer()
                         }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            editingEvent = event
+                        }
+                        .contextMenu {
+                            Button(action: {
+                                editingEvent = event
+                            }) {
+                                Label("Sửa sự kiện", systemImage: "pencil")
+                            }
+                            Button(role: .destructive, action: {
+                                eventService.deleteEvent(id: event.id)
+                            }) {
+                                Label("Xóa sự kiện", systemImage: "trash")
+                            }
+                        }
                     }
                     .onDelete(perform: deleteItems)
                 }
@@ -65,6 +84,9 @@ public struct EventListView: View {
             }
             .sheet(isPresented: $showingAddEvent) {
                 AddEventView()
+            }
+            .sheet(item: $editingEvent) { ev in
+                AddEventView(initialDate: ev.solarDate, editingEvent: ev)
             }
         }
     }

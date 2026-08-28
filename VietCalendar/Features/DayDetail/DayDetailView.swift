@@ -2,8 +2,10 @@
 
 public struct DayDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var eventService = EventService.shared
     public let day: CalendarDay
     @State private var showingAddEvent = false
+    @State private var editingEvent: UserEvent? = nil
     
     public init(day: CalendarDay) {
         self.day = day
@@ -38,6 +40,9 @@ public struct DayDetailView: View {
             .sheet(isPresented: $showingAddEvent) {
                 AddEventView(initialDate: day.date)
             }
+            .sheet(item: $editingEvent) { ev in
+                AddEventView(initialDate: ev.solarDate, editingEvent: ev)
+            }
         }
     }
     
@@ -59,6 +64,12 @@ public struct DayDetailView: View {
                     .font(.headline)
                     .foregroundColor(.vnGold)
             }
+            
+            if day.lunarDate.isLeapMonth {
+                Text("(Tháng Nhuận)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(20)
@@ -67,15 +78,15 @@ public struct DayDetailView: View {
     }
     
     private var canChiCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Can Chi & Ngày Giờ")
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Thông Tin Can Chi & Bát Tự")
                 .font(.headline)
             
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                 infoRow(title: "Năm", value: day.lunarDate.yearName)
                 infoRow(title: "Tháng", value: day.lunarDate.monthName)
                 infoRow(title: "Ngày", value: day.lunarDate.dayName)
-                infoRow(title: "Giờ đầu", value: "Giáp Tý")
+                infoRow(title: "Tiết Khí", value: day.solarTerm?.name ?? "—")
             }
         }
         .padding(16)
@@ -84,38 +95,34 @@ public struct DayDetailView: View {
     }
     
     private func solarTermCard(_ term: SolarTerm) -> some View {
-        HStack {
-            Image(systemName: "leaf.fill")
-                .font(.title2)
-                .foregroundColor(.vnEmerald)
-            VStack(alignment: .leading) {
-                Text("Tiết Khí Hiện Tại")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text(term.name)
-                    .font(.headline.bold())
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Image(systemName: "leaf.fill")
                     .foregroundColor(.vnEmerald)
-                Text(term.description)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                Text("Tiết Khí: \(term.name)")
+                    .font(.headline)
+                    .foregroundColor(.vnEmerald)
             }
-            Spacer()
+            Text(term.meaning)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color.vnSurface)
+        .background(Color.vnEmerald.opacity(0.1))
         .cornerRadius(16)
     }
     
     private var holidaysSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Ngày Lễ & Kỷ Niệm")
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Ngày Lễ & Sự Kiện Dân Gian")
                 .font(.headline)
             
             ForEach(day.holidays) { holiday in
                 HStack {
                     Image(systemName: "sparkles")
                         .foregroundColor(holiday.type.badgeColor)
-                    VStack(alignment: .leading) {
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(holiday.name)
                             .font(.subheadline.bold())
                         if !holiday.description.isEmpty {
@@ -126,18 +133,18 @@ public struct DayDetailView: View {
                     }
                     Spacer()
                     if holiday.isDayOff {
-                        Text("Nghỉ Lễ")
+                        Text("Nghỉ lễ")
                             .font(.caption2.bold())
                             .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.vnRed.opacity(0.15))
-                            .foregroundColor(.vnRed)
-                            .cornerRadius(8)
+                            .padding(.vertical, 3)
+                            .background(Color.vnRed)
+                            .foregroundColor(.white)
+                            .cornerRadius(6)
                     }
                 }
-                .padding(12)
-                .background(holiday.type.badgeColor.opacity(0.08))
-                .cornerRadius(12)
+                .padding(10)
+                .background(Color(UIColor.secondarySystemGroupedBackground))
+                .cornerRadius(10)
             }
         }
         .padding(16)
@@ -146,23 +153,22 @@ public struct DayDetailView: View {
     }
     
     private var auspiciousHoursSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Giờ Hoàng Đạo (Tốt)")
                 .font(.headline)
             
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                ForEach(day.auspiciousHours.filter { $0.isAuspicious }) { h in
+                ForEach(day.auspiciousHours) { hour in
                     VStack(spacing: 2) {
-                        Text(h.name)
+                        Text("Giờ \(hour.branchName)")
                             .font(.subheadline.bold())
-                            .foregroundColor(.vnGold)
-                        Text(h.timeRange)
+                        Text(hour.timeRange)
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(8)
-                    .background(Color.vnGold.opacity(0.1))
+                    .background(Color(UIColor.secondarySystemGroupedBackground))
                     .cornerRadius(8)
                 }
             }
@@ -173,20 +179,20 @@ public struct DayDetailView: View {
     }
     
     private var eventsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Sự Kiện & Lịch Trình")
+                Text("Sự Kiện Của Bạn (Nhấn giữ để sửa/xóa)")
                     .font(.headline)
                 Spacer()
                 Button(action: { showingAddEvent = true }) {
                     Image(systemName: "plus.circle.fill")
-                        .foregroundColor(.vnRed)
+                        .font(.title3)
                 }
             }
             
             if day.events.isEmpty {
-                Text("Không có sự kiện nào cho ngày này.")
-                    .font(.subheadline)
+                Text("Chưa có sự kiện nào cho ngày này.")
+                    .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 8)
             } else {
@@ -195,7 +201,7 @@ public struct DayDetailView: View {
                         Circle()
                             .fill(Color(hex: event.colorHex))
                             .frame(width: 10, height: 10)
-                        VStack(alignment: .leading) {
+                        VStack(alignment: .leading, spacing: 2) {
                             Text(event.title)
                                 .font(.subheadline.bold())
                             if !event.notes.isEmpty {
@@ -212,6 +218,22 @@ public struct DayDetailView: View {
                     .padding(10)
                     .background(Color(UIColor.secondarySystemGroupedBackground))
                     .cornerRadius(10)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        editingEvent = event
+                    }
+                    .contextMenu {
+                        Button(action: {
+                            editingEvent = event
+                        }) {
+                            Label("Sửa sự kiện", systemImage: "pencil")
+                        }
+                        Button(role: .destructive, action: {
+                            eventService.deleteEvent(id: event.id)
+                        }) {
+                            Label("Xóa sự kiện", systemImage: "trash")
+                        }
+                    }
                 }
             }
         }
