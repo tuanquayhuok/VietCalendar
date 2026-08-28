@@ -18,13 +18,11 @@ public struct CalendarSearchView: View {
     public var body: some View {
         NavigationStack {
             ZStack {
-                // Frosted Glass Background
                 Color.black.opacity(0.15)
                     .background(.ultraThinMaterial)
                     .ignoresSafeArea()
                 
                 VStack(spacing: 16) {
-                    // Top Search Bar Capsule
                     HStack(spacing: 10) {
                         HStack(spacing: 8) {
                             Image(systemName: "magnifyingglass")
@@ -39,7 +37,6 @@ public struct CalendarSearchView: View {
                                 }
                             }
                             
-                            // Microphone Voice Search Button
                             Button(action: triggerVoiceSearch) {
                                 Image(systemName: isListeningVoice ? "mic.fill" : "mic")
                                     .font(.system(size: 16, weight: .bold))
@@ -67,7 +64,6 @@ public struct CalendarSearchView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
                     
-                    // Voice Listening Indicator Banner
                     if isListeningVoice {
                         HStack(spacing: 12) {
                             Circle()
@@ -90,22 +86,17 @@ public struct CalendarSearchView: View {
                         .onAppear { voiceAnimation = true }
                     }
                     
-                    // Search Results List
                     ScrollView {
                         LazyVStack(spacing: 10) {
-                            // Section: Ngày Lễ & Kỷ Niệm
-                            let matchedHolidays = filteredHolidays
-                            if !matchedHolidays.isEmpty {
+                            if !filteredHolidays.isEmpty {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("🎉 NGÀY LỄ & KỶ NIỆM DÂN GIAN")
                                         .font(.caption.bold())
                                         .foregroundColor(.secondary)
                                         .padding(.horizontal, 4)
                                     
-                                    ForEach(matchedHolidays) { holiday in
-                                        Button(action: {
-                                            selectHolidayDate(holiday)
-                                        }) {
+                                    ForEach(filteredHolidays) { holiday in
+                                        Button(action: { selectHolidayDate(holiday) }) {
                                             HStack(spacing: 12) {
                                                 Image(systemName: "sparkles")
                                                     .foregroundColor(holiday.type.badgeColor)
@@ -139,9 +130,7 @@ public struct CalendarSearchView: View {
                                 }
                             }
                             
-                            // Section: Sự Kiện Của Bạn
-                            let matchedEvents = filteredEvents
-                            if !matchedEvents.isEmpty {
+                            if !filteredEvents.isEmpty {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("📝 SỰ KIỆN CỦA BẠN")
                                         .font(.caption.bold())
@@ -149,7 +138,7 @@ public struct CalendarSearchView: View {
                                         .padding(.horizontal, 4)
                                         .padding(.top, 8)
                                     
-                                    ForEach(matchedEvents) { ev in
+                                    ForEach(filteredEvents) { ev in
                                         Button(action: {
                                             onSelectDate(ev.solarDate)
                                             dismiss()
@@ -184,7 +173,7 @@ public struct CalendarSearchView: View {
                                 }
                             }
                             
-                            if matchedHolidays.isEmpty && matchedEvents.isEmpty {
+                            if filteredHolidays.isEmpty && filteredEvents.isEmpty {
                                 VStack(spacing: 12) {
                                     Spacer().frame(height: 40)
                                     Image(systemName: "magnifyingglass")
@@ -238,7 +227,6 @@ public struct CalendarSearchView: View {
         #endif
         isListeningVoice = true
         
-        // Voice recognition simulation / automatic keyword detection
         let sampleVoiceQueries = ["Tết Nguyên Đán", "Giỗ Tổ Hùng Vương", "Rằm Tháng Bảy", "Ngày Quốc Khánh", "Lễ Vu Lan"]
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
             isListeningVoice = false
