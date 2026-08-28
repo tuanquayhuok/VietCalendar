@@ -35,8 +35,8 @@ jobs:
             $SWIFT_FILES \
             -o build/Payload/VietCalendar.app/VietCalendar
           
-          # Copy Info.plist
-          cp VietCalendar/Info.plist build/Payload/VietCalendar.app/Info.plist
+          # Normalize Info.plist to Apple XML standard
+          plutil -convert xml1 VietCalendar/Info.plist -o build/Payload/VietCalendar.app/Info.plist
           
           # Copy all direct AppIcon PNGs into App Bundle root
           if [ -d "VietCalendar/Resources/Icons" ]; then
@@ -53,13 +53,17 @@ jobs:
               --output-format human-readable-text || true
           fi
           
-          # Sign binary with local Ad-Hoc signature
-          codesign -s - --force --deep build/Payload/VietCalendar.app
+          # Fix POSIX permissions for 3uTools & Sideloadly compatibility
+          chmod -R 755 build/Payload/VietCalendar.app
+          chmod +x build/Payload/VietCalendar.app/VietCalendar
+          
+          # Sign binary with local Ad-Hoc signature generating valid _CodeSignature/CodeResources
+          codesign --force --deep --sign - build/Payload/VietCalendar.app
 
       - name: Create IPA Package
         run: |
           cd build
-          zip -qr VietCalendar.ipa Payload
+          zip -qr VietCalendar.ipa Payload -x "*.DS_Store"
           cd ..
 
       - name: Upload IPA Artifact
