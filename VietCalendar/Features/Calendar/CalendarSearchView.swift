@@ -2,11 +2,14 @@
 
 public struct CalendarSearchView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var searchText: String = ""
-    public let onSelectDate: (Date) -> Void
+    @ObservedObject private var holidayService = HolidayService.shared
+    @ObservedObject private var eventService = EventService.shared
     
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
-    private let weekdays = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
+    @State private var searchText: String = ""
+    @State private var isListeningVoice = false
+    @State private var voiceAnimation = false
+    
+    public let onSelectDate: (Date) -> Void
     
     public init(onSelectDate: @escaping (Date) -> Void) {
         self.onSelectDate = onSelectDate
@@ -14,144 +17,257 @@ public struct CalendarSearchView: View {
     
     public var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Top Search Bar (Matching Image 4)
-                HStack(spacing: 10) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(.secondary)
-                        TextField("Tìm kiếm", text: $searchText)
-                            .font(.system(size: 17))
-                        
-                        if !searchText.isEmpty {
-                            Button(action: { searchText = "" }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .foregroundColor(.secondary)
-                            }
-                        } else {
-                            Image(systemName: "mic.fill")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(Color(UIColor.secondarySystemGroupedBackground))
-                    .clipShape(Capsule())
-                    .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
-                    
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.primary)
-                            .padding(10)
-                            .background(Color(UIColor.secondarySystemGroupedBackground))
-                            .clipShape(Circle())
-                            .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 10)
+            ZStack {
+                // Frosted Glass Background
+                Color.black.opacity(0.15)
+                    .background(.ultraThinMaterial)
+                    .ignoresSafeArea()
                 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 14) {
-                        // Large Month Header
-                        Text("Tháng 8")
-                            .font(.system(size: 34, weight: .black, design: .rounded))
-                            .padding(.horizontal, 16)
-                            .padding(.top, 12)
-                        
-                        // Weekdays Row
-                        HStack {
-                            ForEach(weekdays, id: \.self) { w in
-                                Text(w)
-                                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                                    .frame(maxWidth: .infinity)
-                                    .foregroundColor(w == "T7" || w == "CN" ? .secondary : .primary)
+                VStack(spacing: 16) {
+                    // Top Search Bar Capsule
+                    HStack(spacing: 10) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.secondary)
+                            TextField("Tìm ngày lễ, tết, giỗ chạp, sự kiện...", text: $searchText)
+                                .font(.system(size: 16))
+                            
+                            if !searchText.isEmpty {
+                                Button(action: { searchText = "" }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            
+                            // Microphone Voice Search Button
+                            Button(action: triggerVoiceSearch) {
+                                Image(systemName: isListeningVoice ? "mic.fill" : "mic")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(isListeningVoice ? .red : .secondary)
+                                    .scaleEffect(isListeningVoice ? 1.2 : 1.0)
+                                    .animation(.easeInOut(duration: 0.2), value: isListeningVoice)
                             }
                         }
                         .padding(.horizontal, 14)
+                        .padding(.vertical, 11)
+                        .background(Color(UIColor.secondarySystemGroupedBackground))
+                        .clipShape(Capsule())
+                        .shadow(color: Color.black.opacity(0.06), radius: 6, x: 0, y: 3)
                         
-                        // Month Days Grid (Matching Image 4)
-                        LazyVGrid(columns: columns, spacing: 10) {
-                            // August 2026 starts on Saturday (offset 5 empty cells)
-                            ForEach(0..<5, id: \.self) { _ in
-                                Text("").frame(height: 48)
+                        Button(action: { dismiss() }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.primary)
+                                .padding(11)
+                                .background(Color(UIColor.secondarySystemGroupedBackground))
+                                .clipShape(Circle())
+                                .shadow(color: Color.black.opacity(0.06), radius: 6, x: 0, y: 3)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    
+                    // Voice Listening Indicator Banner
+                    if isListeningVoice {
+                        HStack(spacing: 12) {
+                            Circle()
+                                .fill(Color.red)
+                                .frame(width: 12, height: 12)
+                                .scaleEffect(voiceAnimation ? 1.4 : 0.8)
+                                .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: voiceAnimation)
+                            
+                            Text("Đang lắng nghe giọng nói... Nói 'Tết', 'Rằm', 'Giỗ Tổ'...")
+                                .font(.caption.bold())
+                                .foregroundColor(.red)
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(Color.red.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .padding(.horizontal, 16)
+                        .onAppear { voiceAnimation = true }
+                    }
+                    
+                    // Search Results List
+                    ScrollView {
+                        LazyVStack(spacing: 10) {
+                            // Section: Ngày Lễ & Kỷ Niệm
+                            let matchedHolidays = filteredHolidays
+                            if !matchedHolidays.isEmpty {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("🎉 NGÀY LỄ & KỶ NIỆM DÂN GIAN")
+                                        .font(.caption.bold())
+                                        .foregroundColor(.secondary)
+                                        .padding(.horizontal, 4)
+                                    
+                                    ForEach(matchedHolidays) { holiday in
+                                        Button(action: {
+                                            selectHolidayDate(holiday)
+                                        }) {
+                                            HStack(spacing: 12) {
+                                                Image(systemName: "sparkles")
+                                                    .foregroundColor(holiday.type.badgeColor)
+                                                
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(holiday.name)
+                                                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                                                        .foregroundColor(.primary)
+                                                    Text(holiday.isLunar ? "Âm lịch: Ngày \(holiday.day) tháng \(holiday.month)" : "Dương lịch: Ngày \(holiday.day)/\(holiday.month)")
+                                                        .font(.caption)
+                                                        .foregroundColor(.secondary)
+                                                }
+                                                
+                                                Spacer()
+                                                
+                                                Text(holiday.type.rawValue)
+                                                    .font(.caption2.bold())
+                                                    .foregroundColor(holiday.type.badgeColor)
+                                                    .padding(.horizontal, 8)
+                                                    .padding(.vertical, 4)
+                                                    .background(holiday.type.badgeColor.opacity(0.12))
+                                                    .clipShape(Capsule())
+                                            }
+                                            .padding(12)
+                                            .background(Color(UIColor.secondarySystemGroupedBackground))
+                                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                            .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
                             }
                             
-                            ForEach(1...31, id: \.self) { day in
-                                searchDayCell(day: day, month: 8, year: 2026)
+                            // Section: Sự Kiện Của Bạn
+                            let matchedEvents = filteredEvents
+                            if !matchedEvents.isEmpty {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("📝 SỰ KIỆN CỦA BẠN")
+                                        .font(.caption.bold())
+                                        .foregroundColor(.secondary)
+                                        .padding(.horizontal, 4)
+                                        .padding(.top, 8)
+                                    
+                                    ForEach(matchedEvents) { ev in
+                                        Button(action: {
+                                            onSelectDate(ev.solarDate)
+                                            dismiss()
+                                        }) {
+                                            HStack(spacing: 12) {
+                                                Circle()
+                                                    .fill(Color(hex: ev.colorHex))
+                                                    .frame(width: 10, height: 10)
+                                                
+                                                VStack(alignment: .leading, spacing: 2) {
+                                                    Text(ev.title)
+                                                        .font(.system(size: 15, weight: .bold))
+                                                        .foregroundColor(.primary)
+                                                    Text(ev.solarDate.formatted(date: .abbreviated, time: .shortened))
+                                                        .font(.caption)
+                                                        .foregroundColor(.secondary)
+                                                }
+                                                
+                                                Spacer()
+                                                
+                                                Image(systemName: "chevron.right")
+                                                    .font(.caption.bold())
+                                                    .foregroundColor(.secondary)
+                                            }
+                                            .padding(12)
+                                            .background(Color(UIColor.secondarySystemGroupedBackground))
+                                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                            .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                            
+                            if matchedHolidays.isEmpty && matchedEvents.isEmpty {
+                                VStack(spacing: 12) {
+                                    Spacer().frame(height: 40)
+                                    Image(systemName: "magnifyingglass")
+                                        .font(.system(size: 44))
+                                        .foregroundColor(.secondary.opacity(0.6))
+                                    Text("Không tìm thấy ngày lễ hoặc sự kiện nào")
+                                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                                        .foregroundColor(.secondary)
+                                    Text("Hãy thử gõ 'Tết', 'Giỗ Tổ', 'Vu Lan', 'Rằm', hoặc tên sự kiện của bạn.")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary.opacity(0.8))
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 32)
+                                }
                             }
                         }
-                        .padding(.horizontal, 12)
-                        
-                        // Bottom Event Status
-                        VStack(spacing: 8) {
-                            Spacer().frame(height: 20)
-                            Text("Không có sự kiện")
-                                .font(.system(size: 20, weight: .bold, design: .rounded))
-                                .foregroundColor(Color.secondary.opacity(0.8))
-                                .frame(maxWidth: .infinity, alignment: .center)
-                        }
-                        .padding(.top, 24)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 4)
+                        .padding(.bottom, 24)
                     }
                 }
             }
-            .background(Color(UIColor.systemBackground))
             .navigationBarHidden(true)
         }
     }
     
-    private func searchDayCell(day: Int, month: Int, year: Int) -> some View {
-        let lunar = LunarCalendarConverter.shared.convertSolarToLunar(day: day, month: month, year: year)
-        let isToday = (day == 29)
-        let isLunarMonthStart = (lunar.day == 1) // Ngày 13 Dương là Mùng 1 Thg 7 Âm
+    private var filteredHolidays: [Holiday] {
+        if searchText.trimmingCharacters(in: .whitespaces).isEmpty {
+            return holidayService.allHolidays
+        }
+        let q = searchText.lowercased()
+        return holidayService.allHolidays.filter {
+            $0.name.lowercased().contains(q) || $0.description.lowercased().contains(q)
+        }
+    }
+    
+    private var filteredEvents: [UserEvent] {
+        if searchText.trimmingCharacters(in: .whitespaces).isEmpty {
+            return eventService.events
+        }
+        let q = searchText.lowercased()
+        return eventService.events.filter {
+            $0.title.lowercased().contains(q) || $0.notes.lowercased().contains(q)
+        }
+    }
+    
+    private func triggerVoiceSearch() {
+        #if os(iOS)
+        let impact = UIImpactFeedbackGenerator(style: .medium)
+        impact.impactOccurred()
+        #endif
+        isListeningVoice = true
         
-        return Button(action: {
+        // Voice recognition simulation / automatic keyword detection
+        let sampleVoiceQueries = ["Tết Nguyên Đán", "Giỗ Tổ Hùng Vương", "Rằm Tháng Bảy", "Ngày Quốc Khánh", "Lễ Vu Lan"]
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+            isListeningVoice = false
+            searchText = sampleVoiceQueries.randomElement() ?? "Tết Nguyên Đán"
+        }
+    }
+    
+    private func selectHolidayDate(_ holiday: Holiday) {
+        let year = 2026
+        if holiday.isLunar {
+            if let solar = LunarCalendarConverter.shared.convertLunarToSolar(lunarDay: holiday.day, lunarMonth: holiday.month, lunarYear: year, isLeap: false) {
+                var comp = DateComponents()
+                comp.year = solar.year
+                comp.month = solar.month
+                comp.day = solar.day
+                if let d = Calendar.current.date(from: comp) {
+                    onSelectDate(d)
+                    dismiss()
+                }
+            }
+        } else {
             var comp = DateComponents()
             comp.year = year
-            comp.month = month
-            comp.day = day
+            comp.month = holiday.month
+            comp.day = holiday.day
             if let d = Calendar.current.date(from: comp) {
                 onSelectDate(d)
                 dismiss()
             }
-        }) {
-            VStack(spacing: 2) {
-                if isToday {
-                    ZStack {
-                        Circle()
-                            .fill(Color.vnRed)
-                            .frame(width: 38, height: 38)
-                        
-                        VStack(spacing: 0) {
-                            Text("\(day)")
-                                .font(.system(size: 16, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
-                            Text("\(lunar.day)")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-                    }
-                } else {
-                    Text("\(day)")
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .foregroundColor(.primary)
-                    
-                    if isLunarMonthStart {
-                        Text("Thg \(lunar.month)")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(Color.vnRed)
-                            .underline(true, color: Color.vnRed)
-                    } else {
-                        Text("\(lunar.day)")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 48)
         }
-        .buttonStyle(.plain)
     }
 }

@@ -16,9 +16,16 @@ public enum AppLanguage: String, CaseIterable, Identifiable {
 public final class LanguageManager: ObservableObject {
     public static let shared = LanguageManager()
     
-    @AppStorage("app_selected_language") public var selectedLanguage: AppLanguage = .vietnamese
+    @Published public var selectedLanguage: AppLanguage {
+        didSet {
+            UserDefaults.standard.set(selectedLanguage.rawValue, forKey: "app_selected_language")
+        }
+    }
     
-    private init() {}
+    private init() {
+        let savedLang = UserDefaults.standard.string(forKey: "app_selected_language") ?? ""
+        self.selectedLanguage = AppLanguage(rawValue: savedLang) ?? .vietnamese
+    }
     
     public func tr(_ viText: String, en enText: String) -> String {
         return selectedLanguage == .vietnamese ? viText : enText

@@ -9,6 +9,8 @@ public struct AddEventView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var eventService = EventService.shared
     
+    public var editingEvent: UserEvent? = nil
+    
     @State private var entryType: EventEntryType = .event
     @State private var title: String = ""
     @State private var location: String = ""
@@ -20,9 +22,18 @@ public struct AddEventView: View {
     @State private var selectedCalendar: String = "Lịch"
     @State private var alertOption: String = "Không có"
     
-    public init(initialDate: Date = Date()) {
-        _startDate = State(initialValue: initialDate)
-        _endDate = State(initialValue: initialDate.addingTimeInterval(3600))
+    public init(initialDate: Date = Date(), editingEvent: UserEvent? = nil) {
+        self.editingEvent = editingEvent
+        if let ev = editingEvent {
+            _title = State(initialValue: ev.title)
+            _location = State(initialValue: ev.notes)
+            _startDate = State(initialValue: ev.solarDate)
+            _endDate = State(initialValue: ev.solarDate.addingTimeInterval(3600))
+            _isAllDay = State(initialValue: ev.isAllDay)
+        } else {
+            _startDate = State(initialValue: initialDate)
+            _endDate = State(initialValue: initialDate.addingTimeInterval(3600))
+        }
     }
     
     public var body: some View {
@@ -41,14 +52,14 @@ public struct AddEventView: View {
                     
                     // Card 1: Tiêu đề & Vị trí
                     VStack(spacing: 0) {
-                        TextField("Tiêu đề", text: $title)
+                        TextField("Tiêu đề sự kiện", text: $title)
                             .font(.system(size: 16))
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
                         
                         Divider().padding(.leading, 16)
                         
-                        TextField("Vị trí hoặc cuộc gọi video", text: $location)
+                        TextField("Vị trí hoặc ghi chú", text: $location)
                             .font(.system(size: 16))
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
@@ -172,11 +183,31 @@ public struct AddEventView: View {
                     .background(Color(UIColor.secondarySystemGroupedBackground))
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .padding(.horizontal, 16)
+                    
+                    // Nút Xóa (nếu đang chỉnh sửa sự kiện)
+                    if let ev = editingEvent {
+                        Button(action: {
+                            eventService.deleteEvent(id: ev.id)
+                            dismiss()
+                        }) {
+                            HStack {
+                                Image(systemName: "trash")
+                                Text("Xóa sự kiện này")
+                            }
+                            .font(.headline)
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(UIColor.secondarySystemGroupedBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        }
+                        .padding(.horizontal, 16)
+                    }
                 }
                 .padding(.bottom, 24)
             }
             .background(Color(UIColor.systemGroupedBackground))
-            .navigationTitle("Mới")
+            .navigationTitle(editingEvent == nil ? "Mới" : "Sửa Sự Kiện")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -193,17 +224,27 @@ public struct AddEventView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(action: {
                         if !title.isEmpty {
-                            let newEvent = UserEvent(
-                                title: title,
-                                notes: location,
-                                solarDate: startDate,
-                                isLunarBased: false,
-                                repeatType: .none,
-                                colorHex: "#2563EB",
-                                isAllDay: isAllDay,
-                                hasReminder: alertOption != "Không có"
-                            )
-                            eventService.addEvent(newEvent)
+                            if let ev = editingEvent {
+                                var updated = ev
+                                updated.title = title
+                                updated.notes = location
+                                updated.solarDate = startDate
+                                updated.isAllDay = isAllDay
+                                updated.hasReminder = alertOption != "Không có"
+                                eventService.updateEvent(updated)
+                            } else {
+                                let newEvent = UserEvent(
+                                    title: title,
+                                    notes: location,
+                                    solarDate: startDate,
+                                    isLunarBased: false,
+                                    repeatType: .none,
+                                    colorHex: "#2563EB",
+                                    isAllDay: isAllDay,
+                                    hasReminder: alertOption != "Không có"
+                                )
+                                eventService.addEvent(newEvent)
+                            }
                         }
                         dismiss()
                     }) {

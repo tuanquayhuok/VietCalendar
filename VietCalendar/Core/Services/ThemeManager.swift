@@ -47,8 +47,23 @@ public enum AppAccentColor: String, CaseIterable, Identifiable {
 public final class ThemeManager: ObservableObject {
     public static let shared = ThemeManager()
     
-    @AppStorage("app_theme_mode") public var selectedTheme: AppThemeMode = .system
-    @AppStorage("app_accent_color") public var selectedAccent: AppAccentColor = .red
+    @Published public var selectedTheme: AppThemeMode {
+        didSet {
+            UserDefaults.standard.set(selectedTheme.rawValue, forKey: "app_theme_mode")
+        }
+    }
     
-    private init() {}
+    @Published public var selectedAccent: AppAccentColor {
+        didSet {
+            UserDefaults.standard.set(selectedAccent.rawValue, forKey: "app_accent_color")
+        }
+    }
+    
+    private init() {
+        let savedTheme = UserDefaults.standard.string(forKey: "app_theme_mode") ?? ""
+        self.selectedTheme = AppThemeMode(rawValue: savedTheme) ?? .system
+        
+        let savedAccent = UserDefaults.standard.string(forKey: "app_accent_color") ?? ""
+        self.selectedAccent = AppAccentColor(rawValue: savedAccent) ?? .red
+    }
 }
