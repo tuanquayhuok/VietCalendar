@@ -59,20 +59,17 @@ jobs:
           # Fix POSIX permissions for 3uTools & Sideloadly compatibility
           chmod -R 755 build/Payload/VietCalendar.app
           chmod +x build/Payload/VietCalendar.app/VietCalendar
-          
-          # Sign binary with local Ad-Hoc signature generating valid _CodeSignature/CodeResources
-          codesign -s - -f build/Payload/VietCalendar.app/VietCalendar || true
-          codesign -s - -f --deep --identifier "com.vietcalendar.app" build/Payload/VietCalendar.app || true
 
-      - name: Create IPA Package
+      - name: Package Payload into Signed-Ready IPA
         run: |
           cd build
-          zip -qr VietCalendar.ipa Payload -x "*.DS_Store"
+          zip -r ../VietCalendar.ipa Payload/
           cd ..
+          ls -la VietCalendar.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: VietCalendar-IPA
-          path: build/VietCalendar.ipa
+          path: VietCalendar.ipa
           retention-days: 14
