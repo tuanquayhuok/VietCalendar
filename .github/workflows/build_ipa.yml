@@ -18,7 +18,9 @@ jobs:
         run: brew install xcodegen
 
       - name: Generate Xcode Project
-        run: xcodegen generate
+        run: |
+          xcodegen generate
+          xcodebuild -list -project VietCalendar.xcodeproj
 
       - name: Build Application Bundle
         run: |
@@ -31,13 +33,12 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            ENTITLEMENTS_REQUIRED=NO \
-            PROVISIONING_PROFILE_SPECIFIER=""
+            COMPILER_INDEX_STORE_ENABLE=NO
 
       - name: Package Payload and Create IPA
         run: |
           mkdir -p build/Payload
-          find build/DerivedData/Build/Products/Release-iphoneos -name "*.app" -exec cp -r {} build/Payload/ \;
+          find build/DerivedData/Build/Products/Release-iphoneos -name "*.app" -maxdepth 1 -exec cp -r {} build/Payload/ \;
           cd build
           zip -qr VietCalendar.ipa Payload
           cd ..
