@@ -2,7 +2,9 @@
 
 on:
   push:
-    branches: [ main, master ]
+    paths:
+      - 'app_adr/**'
+      - '.github/workflows/build_apk.yml'
   workflow_dispatch:
 
 jobs:
@@ -26,7 +28,7 @@ jobs:
       - name: Build APK with Gradle
         run: |
           cd app_adr
-          gradle assembleRelease --no-daemon
+          gradle assembleRelease --no-daemon -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4

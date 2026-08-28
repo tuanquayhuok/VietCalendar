@@ -2,7 +2,10 @@
 
 on:
   push:
-    branches: [ main, master ]
+    paths:
+      - 'VietCalendar/**'
+      - 'project.yml'
+      - '.github/workflows/build_ipa.yml'
   workflow_dispatch:
 
 jobs:
