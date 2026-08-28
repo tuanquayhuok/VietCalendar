@@ -19,31 +19,37 @@ jobs:
         with:
           xcode-version: '15.4'
 
-      - name: Install XcodeGen
-        run: brew install xcodegen
-
-      - name: Generate Xcode Project
-        run: xcodegen generate
-
-      - name: Build for iOS Device
+      - name: Compile Application with Swift Toolchain
         run: |
-          xcodebuild build \
-            -project VietCalendar.xcodeproj \
-            -scheme VietCalendar \
-            -configuration Release \
-            -destination "generic/platform=iOS" \
-            -derivedDataPath build/DerivedData \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            PROVISIONING_PROFILE="" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
-            DEVELOPMENT_TEAM=""
+          mkdir -p build/Payload/VietCalendar.app
+          SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
+          
+          SWIFT_FILES=$(find VietCalendar -name "*.swift")
+          echo "Compiling Swift files: $SWIFT_FILES"
+          
+          xcrun swiftc \
+            -target arm64-apple-ios17.0 \
+            -sdk "$SDK_PATH" \
+            -O \
+            -parse-as-library \
+            $SWIFT_FILES \
+            -o build/Payload/VietCalendar.app/VietCalendar
+          
+          cp VietCalendar/Info.plist build/Payload/VietCalendar.app/Info.plist
+          
+          if [ -d "VietCalendar/Resources/Assets.xcassets" ]; then
+            xcrun actool VietCalendar/Resources/Assets.xcassets \
+              --compile build/Payload/VietCalendar.app \
+              --platform iphoneos \
+              --minimum-deployment-target 17.0 \
+              --app-icon AppIcon \
+              --output-format human-readable-text || true
+          fi
+          
+          codesign -s - --force --deep build/Payload/VietCalendar.app
 
       - name: Create IPA Package
         run: |
-          mkdir -p build/Payload
-          find build/DerivedData/Build/Products/Release-iphoneos -name "*.app" -maxdepth 1 -exec cp -r {} build/Payload/ \;
           cd build
           zip -qr VietCalendar.ipa Payload
           cd ..
