@@ -7,6 +7,7 @@ public struct SettingsView: View {
     @AppStorage("enable_holidays") private var enableHolidays = true
     @AppStorage("enable_solar_terms") private var enableSolarTerms = true
     @AppStorage("enable_auspicious_hours") private var enableAuspicious = true
+    @AppStorage("enable_notifications_toggle") private var enableNotificationsToggle = false
     
     @State private var notificationStatus = "Chưa cấp quyền"
     @State private var showingSplashPreview = false
@@ -52,8 +53,21 @@ public struct SettingsView: View {
                     Toggle(langManager.tr("Hiển thị Giờ Hoàng Đạo", en: "Show Auspicious Hours"), isOn: $enableAuspicious)
                 }
                 
-                // MARK: - 4. Thông Báo (Notifications)
+                // MARK: - 4. Thông Báo & Nhắc Nhở (Tự động yêu cầu quyền + Bắn popup)
                 Section(header: Text(langManager.tr("Thông Báo & Nhắc Nhở", en: "Notifications"))) {
+                    Toggle(langManager.tr("Nhắc nhở thông báo", en: "Enable Notifications"), isOn: $enableNotificationsToggle)
+                        .onChange(of: enableNotificationsToggle) { _, newValue in
+                            if newValue {
+                                Task {
+                                    let granted = await NotificationService.shared.requestAuthorizationAndSendWelcome()
+                                    notificationStatus = granted ? langManager.tr("Đã kích hoạt", en: "Enabled") : langManager.tr("Bị từ chối", en: "Denied")
+                                    if !granted {
+                                        enableNotificationsToggle = false
+                                    }
+                                }
+                            }
+                        }
+                    
                     HStack {
                         Text(langManager.tr("Trạng thái", en: "Status"))
                         Spacer()
@@ -62,15 +76,15 @@ public struct SettingsView: View {
                             .foregroundColor(.secondary)
                     }
                     
-                    Button(langManager.tr("Cấp quyền nhận thông báo", en: "Enable Notifications")) {
+                    Button(langManager.tr("Gửi thông báo thử nghiệm", en: "Send Test Notification")) {
                         Task {
-                            let granted = await NotificationService.shared.requestAuthorization()
-                            notificationStatus = granted ? langManager.tr("Đã bật", en: "Enabled") : langManager.tr("Bị từ chối", en: "Denied")
+                            let granted = await NotificationService.shared.requestAuthorizationAndSendWelcome()
+                            notificationStatus = granted ? langManager.tr("Đã kích hoạt", en: "Enabled") : langManager.tr("Bị từ chối", en: "Denied")
                         }
                     }
                 }
                 
-                // MARK: - 5. Tác Giả & Nhà Phát Triển (Developer Credit: by trongtuandev)
+                // MARK: - 5. Tác Giả & Nhà Phát Triển (by trongtuandev)
                 Section(header: Text(langManager.tr("Nhà Phát Triển", en: "Developer & Creator"))) {
                     HStack(spacing: 14) {
                         Circle()
@@ -95,7 +109,7 @@ public struct SettingsView: View {
                     .padding(.vertical, 4)
                     
                     Button(action: { showingSplashPreview = true }) {
-                        Label(langManager.tr("Xem lại màn hình mở đầu (5s)", en: "Replay 5s Splash Animation"), systemImage: "play.circle.fill")
+                        Label(langManager.tr("Xem lại màn hình mở đầu (3s)", en: "Replay 3s Splash Animation"), systemImage: "play.circle.fill")
                             .font(.subheadline)
                     }
                 }
@@ -105,7 +119,7 @@ public struct SettingsView: View {
                     HStack {
                         Text(langManager.tr("Phiên bản", en: "Version"))
                         Spacer()
-                        Text("1.3.0 (Build 2026)")
+                        Text("1.3.1 (Build 2026)")
                             .foregroundColor(.secondary)
                     }
                     HStack {

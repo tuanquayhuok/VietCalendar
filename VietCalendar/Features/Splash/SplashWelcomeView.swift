@@ -6,11 +6,10 @@ public struct SplashWelcomeView: View {
     // Animation states
     @State private var pageNumber = 1
     @State private var flipAngle: Double = 0
-    @State private var calendarScale: CGFloat = 0.8
+    @State private var calendarScale: CGFloat = 0.85
     @State private var calendarOpacity: Double = 0.0
     @State private var titleOpacity: Double = 0.0
     @State private var authorOpacity: Double = 0.0
-    @State private var progressWidth: CGFloat = 0.0
     
     // Sample flipping days
     private let flipDays = [
@@ -31,23 +30,23 @@ public struct SplashWelcomeView: View {
             Color(hex: "#0F172A")
                 .ignoresSafeArea()
             
-            // Subtle ambient light
+            // Ánh sáng nhẹ ở trung tâm
             RadialGradient(
-                colors: [Color(hex: "#DC2626").opacity(0.2), Color.clear],
+                colors: [Color(hex: "#DC2626").opacity(0.18), Color.clear],
                 center: .center,
                 startRadius: 20,
-                endRadius: 300
+                endRadius: 280
             )
             .ignoresSafeArea()
             
-            VStack(spacing: 28) {
+            VStack(spacing: 26) {
                 Spacer()
                 
                 // MARK: - 3D Flipping Calendar Bloc (Cuốn Lịch Lật Trang)
                 ZStack {
                     // Bóng đổ phía dưới cuốn lịch
                     RoundedRectangle(cornerRadius: 22)
-                        .fill(Color.black.opacity(0.4))
+                        .fill(Color.black.opacity(0.45))
                         .frame(width: 200, height: 230)
                         .offset(y: 12)
                         .blur(radius: 14)
@@ -134,29 +133,7 @@ public struct SplashWelcomeView: View {
                 }
                 
                 Spacer()
-                
-                // Thanh progress chạy mượt đáy màn hình trong đúng 5s
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule()
-                            .fill(Color.white.opacity(0.1))
-                            .frame(height: 3)
-                        
-                        Capsule()
-                            .fill(
-                                LinearGradient(
-                                    colors: [Color(hex: "#DC2626"), Color(hex: "#F59E0B")],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .frame(width: progressWidth, height: 3)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.horizontal, 60)
-                }
-                .frame(height: 10)
-                .padding(.bottom, 24)
+                Spacer()
             }
         }
         .onAppear {
@@ -170,47 +147,41 @@ public struct SplashWelcomeView: View {
     }
     
     private func startAnimationSequence() {
-        // 1. Cuốn lịch xuất hiện mượt mà (0.0s -> 0.5s)
-        withAnimation(.spring(response: 0.7, dampingFraction: 0.7)) {
+        // 1. Cuốn lịch xuất hiện mượt mà (0.0s -> 0.4s)
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
             calendarOpacity = 1.0
             calendarScale = 1.0
         }
         
-        // 2. Chữ "LỊCH VIỆT NAM" hiện lên (0.4s)
-        withAnimation(.easeOut(duration: 0.6).delay(0.4)) {
+        // 2. Chữ "LỊCH VIỆT NAM" hiện lên (0.3s)
+        withAnimation(.easeOut(duration: 0.4).delay(0.3)) {
             titleOpacity = 1.0
         }
         
-        // 3. Chữ "by trongtuandev" hiện lên (0.8s)
-        withAnimation(.easeOut(duration: 0.6).delay(0.8)) {
+        // 3. Chữ "by trongtuandev" hiện lên (0.5s)
+        withAnimation(.easeOut(duration: 0.4).delay(0.5)) {
             authorOpacity = 1.0
         }
         
-        // 4. Thanh progress chạy đầy trong đúng 5.0 giây
-        withAnimation(.linear(duration: 4.8)) {
-            progressWidth = UIScreen.main.bounds.width - 120
-        }
-        
-        // 5. Hiệu ứng lật trang lịch chạy chạy liên tục (0.8s -> 4.2s)
-        let flipIntervals: [Double] = [0.8, 1.5, 2.2, 2.9, 3.6]
+        // 4. Lật trang lịch nhanh, mượt trong 3 giây
+        let flipIntervals: [Double] = [0.5, 1.0, 1.5, 2.0, 2.4]
         for (i, time) in flipIntervals.enumerated() {
             DispatchQueue.main.asyncAfter(deadline: .now() + time) {
-                // Lật trang
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    flipAngle = -20
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    flipAngle = -25
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     pageNumber = i + 1
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.6)) {
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) {
                         flipAngle = 0
                     }
                 }
             }
         }
         
-        // 6. Đúng 5.0 giây: Tự động chuyển thẳng vào trang chủ không cần bấm nút
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
-            withAnimation(.easeInOut(duration: 0.5)) {
+        // 5. Đúng 3.0 giây: Tự động chuyển thẳng vào trang chủ không cần nút
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            withAnimation(.easeInOut(duration: 0.45)) {
                 onFinished()
             }
         }

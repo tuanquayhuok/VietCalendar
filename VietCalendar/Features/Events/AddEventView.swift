@@ -57,6 +57,13 @@ public struct AddEventView: View {
                     }
                     
                     Toggle("Nhắc nhở thông báo", isOn: $hasReminder)
+                        .onChange(of: hasReminder) { _, newValue in
+                            if newValue {
+                                Task {
+                                    _ = await NotificationService.shared.requestAuthorizationAndSendWelcome()
+                                }
+                            }
+                        }
                 }
                 
                 Section(header: Text("Màu Sắc Nhận Diện")) {
