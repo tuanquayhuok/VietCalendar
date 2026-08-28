@@ -2,12 +2,12 @@
 import UserNotifications
 
 @main
-struct VietCalendarApp: App {
-    init() {
+public struct VietCalendarApp: App {
+    public init() {
         UNUserNotificationCenter.current().delegate = NotificationDelegate.shared
     }
     
-    var body: some Scene {
+    public var body: some Scene {
         WindowGroup {
             ContentView()
         }
