@@ -9,12 +9,12 @@ public struct AddEventView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var eventService = EventService.shared
     
-    public var editingEvent: UserEvent? = nil
+    public let editingEvent: UserEvent?
     
     @State private var entryType: EventEntryType = .event
-    @State private var title: String = ""
-    @State private var location: String = ""
-    @State private var isAllDay: Bool = false
+    @State private var title: String
+    @State private var location: String
+    @State private var isAllDay: Bool
     @State private var startDate: Date
     @State private var endDate: Date
     @State private var travelTime: String = "Không có"
@@ -31,6 +31,9 @@ public struct AddEventView: View {
             _endDate = State(initialValue: ev.solarDate.addingTimeInterval(3600))
             _isAllDay = State(initialValue: ev.isAllDay)
         } else {
+            _title = State(initialValue: "")
+            _location = State(initialValue: "")
+            _isAllDay = State(initialValue: false)
             _startDate = State(initialValue: initialDate)
             _endDate = State(initialValue: initialDate.addingTimeInterval(3600))
         }
@@ -40,7 +43,6 @@ public struct AddEventView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    // Segmented Control: [ Sự kiện | Lời nhắc ]
                     Picker("Loại", selection: $entryType) {
                         ForEach(EventEntryType.allCases, id: \.self) { type in
                             Text(type.rawValue).tag(type)
@@ -50,7 +52,6 @@ public struct AddEventView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
                     
-                    // Card 1: Tiêu đề & Vị trí
                     VStack(spacing: 0) {
                         TextField("Tiêu đề sự kiện", text: $title)
                             .font(.system(size: 16))
@@ -68,7 +69,6 @@ public struct AddEventView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .padding(.horizontal, 16)
                     
-                    // Card 2: Thời gian & Ngày giờ
                     VStack(spacing: 12) {
                         Toggle("Cả ngày", isOn: $isAllDay)
                             .font(.system(size: 16))
@@ -77,7 +77,6 @@ public struct AddEventView: View {
                         
                         Divider().padding(.leading, 16)
                         
-                        // Bắt đầu
                         HStack {
                             Text("Bắt đầu")
                                 .font(.system(size: 16))
@@ -93,7 +92,6 @@ public struct AddEventView: View {
                         
                         Divider().padding(.leading, 16)
                         
-                        // Kết thúc
                         HStack {
                             Text("Kết thúc")
                                 .font(.system(size: 16))
@@ -109,7 +107,6 @@ public struct AddEventView: View {
                         
                         Divider().padding(.leading, 16)
                         
-                        // Thời gian di chuyển
                         HStack {
                             Text("Thời gian di chuyển")
                                 .font(.system(size: 16))
@@ -125,7 +122,6 @@ public struct AddEventView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .padding(.horizontal, 16)
                     
-                    // Card 3: Lặp lại
                     HStack {
                         Text("Lặp lại")
                             .font(.system(size: 16))
@@ -139,7 +135,6 @@ public struct AddEventView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .padding(.horizontal, 16)
                     
-                    // Card 4: Lịch & Người mời
                     VStack(spacing: 0) {
                         HStack {
                             Text("Lịch")
@@ -170,7 +165,6 @@ public struct AddEventView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .padding(.horizontal, 16)
                     
-                    // Card 5: Cảnh báo
                     HStack {
                         Text("Cảnh báo")
                             .font(.system(size: 16))
@@ -184,7 +178,6 @@ public struct AddEventView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .padding(.horizontal, 16)
                     
-                    // Nút Xóa (nếu đang chỉnh sửa sự kiện)
                     if let ev = editingEvent {
                         Button(action: {
                             eventService.deleteEvent(id: ev.id)

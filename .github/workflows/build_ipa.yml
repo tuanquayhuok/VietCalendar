@@ -29,6 +29,7 @@ jobs:
           
           SWIFT_FILES=$(find VietCalendar -name "*.swift")
           echo "Compiling Swift files..."
+          echo "$SWIFT_FILES"
           
           xcrun swiftc \
             -target arm64-apple-ios17.0 \
@@ -58,19 +59,17 @@ jobs:
           
           # Fix POSIX permissions for 3uTools & Sideloadly compatibility
           chmod -R 755 build/Payload/VietCalendar.app
-          chmod +x build/Payload/VietCalendar.app/VietCalendar
-          
-          # Sign binary with local Ad-Hoc signature generating valid _CodeSignature/CodeResources
-          codesign --force --deep --sign - build/Payload/VietCalendar.app
 
-      - name: Create IPA Package
+      - name: Package Payload into Signed-Ready IPA
         run: |
           cd build
-          zip -qr VietCalendar.ipa Payload -x "*.DS_Store"
+          zip -r9 ../VietCalendar.ipa Payload/
           cd ..
+          ls -la VietCalendar.ipa
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: VietCalendar-IPA
-          path: build/VietCalendar.ipa
+          path: VietCalendar.ipa
+          retention-days: 14
