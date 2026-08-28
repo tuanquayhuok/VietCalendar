@@ -19,6 +19,12 @@ public struct ConvertDateView: View {
     
     private let converter = LunarCalendarConverter.shared
     
+    public init() {}
+    
+    private var convertedLunar: LunarDate {
+        converter.convertSolarToLunar(date: inputSolarDate)
+    }
+    
     public var body: some View {
         NavigationStack {
             Form {
@@ -37,11 +43,10 @@ public struct ConvertDateView: View {
                     }
                     
                     Section(header: Text("Kết Quả Âm Lịch")) {
-                        let lunar = converter.convertSolarToLunar(date: inputSolarDate)
-                        resultRow(title: "Ngày Âm Lịch", value: "\(lunar.day)/\(lunar.month)\(lunar.isLeapMonth ? " (Nhuận)" : "")")
-                        resultRow(title: "Năm Âm Lịch", value: lunar.yearName)
-                        resultRow(title: "Tháng", value: lunar.monthName)
-                        resultRow(title: "Ngày (Can Chi)", value: lunar.dayName)
+                        resultRow(title: "Ngày Âm Lịch", value: "\(convertedLunar.day)/\(convertedLunar.month)\(convertedLunar.isLeapMonth ? " (Nhuận)" : "")")
+                        resultRow(title: "Năm Âm Lịch", value: convertedLunar.yearName)
+                        resultRow(title: "Tháng", value: convertedLunar.monthName)
+                        resultRow(title: "Ngày (Can Chi)", value: convertedLunar.dayName)
                     }
                 } else {
                     Section(header: Text("Nhập Ngày Âm Lịch")) {
@@ -64,16 +69,17 @@ public struct ConvertDateView: View {
                     }
                     
                     Section(header: Text("Kết Quả Dương Lịch")) {
-                        if let res = converter.convertLunarToSolar(lunarDay: inputLunarDay, lunarMonth: inputLunarMonth, lunarYear: inputLunarYear, isLeap: isLeap) {
-                            resultRow(title: "Ngày Dương Lịch", value: "\(res.day)/\(res.month)/\(res.year)")
+                        if let solar = converter.convertLunarToSolar(lunarDay: inputLunarDay, lunarMonth: inputLunarMonth, lunarYear: inputLunarYear, isLeap: isLeap) {
+                            resultRow(title: "Ngày Dương Lịch", value: "\(solar.day)/\(solar.month)/\(solar.year)")
                         } else {
-                            Text("Không tìm thấy ngày dương lịch tương ứng")
-                                .foregroundColor(.secondary)
+                            Text("Ngày âm lịch không hợp lệ")
+                                .foregroundColor(.red)
                         }
                     }
                 }
             }
-            .navigationTitle("Đổi Ngày Âm Dương")
+            .navigationTitle("Chuyển Đổi Âm/Dương")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
     
@@ -83,8 +89,8 @@ public struct ConvertDateView: View {
                 .foregroundColor(.secondary)
             Spacer()
             Text(value)
-                .font(.headline)
-                .foregroundColor(.vnRed)
+                .bold()
+                .foregroundColor(.primary)
         }
     }
 }
