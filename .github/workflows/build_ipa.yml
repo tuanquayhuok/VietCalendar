@@ -25,7 +25,7 @@ jobs:
           SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
           
           SWIFT_FILES=$(find VietCalendar -name "*.swift")
-          echo "Compiling Swift files: $SWIFT_FILES"
+          echo "Compiling Swift files..."
           
           xcrun swiftc \
             -target arm64-apple-ios17.0 \
@@ -35,8 +35,15 @@ jobs:
             $SWIFT_FILES \
             -o build/Payload/VietCalendar.app/VietCalendar
           
+          # Copy Info.plist
           cp VietCalendar/Info.plist build/Payload/VietCalendar.app/Info.plist
           
+          # Copy all direct AppIcon PNGs into App Bundle root
+          if [ -d "VietCalendar/Resources/Icons" ]; then
+            cp VietCalendar/Resources/Icons/*.png build/Payload/VietCalendar.app/
+          fi
+          
+          # Compile Assets Catalog to Assets.car
           if [ -d "VietCalendar/Resources/Assets.xcassets" ]; then
             xcrun actool VietCalendar/Resources/Assets.xcassets \
               --compile build/Payload/VietCalendar.app \
@@ -46,6 +53,7 @@ jobs:
               --output-format human-readable-text || true
           fi
           
+          # Sign binary with local Ad-Hoc signature
           codesign -s - --force --deep build/Payload/VietCalendar.app
 
       - name: Create IPA Package
