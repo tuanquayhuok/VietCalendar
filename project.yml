@@ -6,10 +6,9 @@ options:
 settings:
   base:
     SWIFT_VERSION: '5.9'
-    AD_HOC_CODE_SIGNING_ALLOWED: YES
-    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGNING_ALLOWED: NO
     CODE_SIGNING_REQUIRED: NO
-    CODE_SIGNING_ALLOWED: YES
+    CODE_SIGN_IDENTITY: ""
     DEVELOPMENT_TEAM: ""
 
 targets:
@@ -27,8 +26,7 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
         GENERATE_INFOPLIST_FILE: YES
-        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        AD_HOC_CODE_SIGNING_ALLOWED: YES
-        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGNING_ALLOWED: NO
         CODE_SIGNING_REQUIRED: NO
-        CODE_SIGNING_ALLOWED: YES
+        CODE_SIGN_IDENTITY: ""
+        ENTITLEMENTS_REQUIRED: NO
