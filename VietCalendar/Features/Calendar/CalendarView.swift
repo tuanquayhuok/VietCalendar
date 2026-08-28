@@ -7,16 +7,29 @@ public enum CalendarViewStyle: String, CaseIterable {
     case list = "Danh sách"
 }
 
+public enum CalendarActiveSheet: Identifiable {
+    case yearGrid
+    case search
+    case addEvent
+    case dayDetail(CalendarDay)
+    
+    public var id: String {
+        switch self {
+        case .yearGrid: return "yearGrid"
+        case .search: return "search"
+        case .addEvent: return "addEvent"
+        case .dayDetail(let day): return "dayDetail_\(day.id)"
+        }
+    }
+}
+
 public struct CalendarView: View {
     @StateObject private var viewModel = CalendarViewModel()
     @ObservedObject private var themeManager = ThemeManager.shared
     @ObservedObject private var langManager = LanguageManager.shared
     
     @State private var viewStyle: CalendarViewStyle = .detailed
-    @State private var showingYearGrid = false
-    @State private var showingSearch = false
-    @State private var showingAddEvent = false
-    @State private var showingDetailSheet = false
+    @State private var activeSheet: CalendarActiveSheet? = nil
     
     public init() {}
     
@@ -88,22 +101,20 @@ public struct CalendarView: View {
                 Spacer()
             }
             .navigationBarHidden(true)
-            .sheet(isPresented: $showingYearGrid) {
-                YearGridView(selectedYear: $viewModel.selectedYear) { month in
-                    viewModel.jumpToMonth(month: month, year: viewModel.selectedYear)
-                }
-            }
-            .sheet(isPresented: $showingSearch) {
-                CalendarSearchView { date in
-                    viewModel.selectedDate = date
-                    viewModel.generateDays()
-                }
-            }
-            .sheet(isPresented: $showingAddEvent) {
-                AddEventView(initialDate: viewModel.selectedDate)
-            }
-            .sheet(isPresented: $showingDetailSheet) {
-                if let day = viewModel.selectedDayDetails {
+            .sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .yearGrid:
+                    YearGridView(selectedYear: $viewModel.selectedYear) { month in
+                        viewModel.jumpToMonth(month: month, year: viewModel.selectedYear)
+                    }
+                case .search:
+                    CalendarSearchView { date in
+                        viewModel.selectedDate = date
+                        viewModel.generateDays()
+                    }
+                case .addEvent:
+                    AddEventView(initialDate: viewModel.selectedDate)
+                case .dayDetail(let day):
                     DayDetailView(day: day)
                 }
             }
@@ -119,7 +130,7 @@ public struct CalendarView: View {
                 let impact = UIImpactFeedbackGenerator(style: .medium)
                 impact.impactOccurred()
                 #endif
-                showingYearGrid = true
+                activeSheet = .yearGrid
             }) {
                 HStack(spacing: 6) {
                     Image(systemName: "chevron.left")
@@ -164,7 +175,7 @@ public struct CalendarView: View {
                 
                 // Search Button (Matching Image 4)
                 Button(action: {
-                    showingSearch = true
+                    activeSheet = .search
                 }) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 16, weight: .bold))
@@ -173,7 +184,7 @@ public struct CalendarView: View {
                 
                 // Add Event (+) Button (Matching Image 3)
                 Button(action: {
-                    showingAddEvent = true
+                    activeSheet = .addEvent
                 }) {
                     Image(systemName: "plus")
                         .font(.system(size: 17, weight: .bold))
@@ -299,7 +310,7 @@ public struct CalendarView: View {
                         
                         Button(action: {
                             viewModel.selectDay(day)
-                            showingDetailSheet = true
+                            activeSheet = .dayDetail(day)
                         }) {
                             Image(systemName: "chevron.right")
                                 .font(.caption.bold())
@@ -333,7 +344,7 @@ public struct CalendarView: View {
                 Spacer()
                 
                 Button(action: {
-                    showingDetailSheet = true
+                    activeSheet = .dayDetail(day)
                 }) {
                     Text(langManager.tr("Chi tiết", en: "Details"))
                         .font(.subheadline.bold())

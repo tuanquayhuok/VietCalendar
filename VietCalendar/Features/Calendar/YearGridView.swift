@@ -1,10 +1,26 @@
 ﻿import SwiftUI
 
+public struct MiniDayInfo: Identifiable, Sendable {
+    public let id: Int // index 0..<42
+    public let dayNumber: Int?
+    public let isToday: Bool
+    public let isLunarStart: Bool
+}
+
+public struct MiniMonthInfo: Identifiable, Sendable {
+    public let id: Int // month 1..12
+    public let monthNumber: Int
+    public let days: [MiniDayInfo]
+}
+
 public struct YearGridView: View {
     @Binding var selectedYear: Int
     public let onSelectMonth: (Int) -> Void
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var themeManager = ThemeManager.shared
+    
+    @State private var months2026: [MiniMonthInfo] = []
+    @State private var months2027: [MiniMonthInfo] = []
     
     public init(selectedYear: Binding<Int>, onSelectMonth: @escaping (Int) -> Void) {
         self._selectedYear = selectedYear
@@ -21,8 +37,8 @@ public struct YearGridView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
-                    yearSection(year: selectedYear)
-                    yearSection(year: selectedYear + 1)
+                    yearSection(year: selectedYear, months: months2026)
+                    yearSection(year: selectedYear + 1, months: months2027)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
@@ -91,10 +107,54 @@ public struct YearGridView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 12)
             }
+            .onAppear {
+                loadYearData()
+            }
         }
     }
     
-    private func yearSection(year: Int) -> some View {
+    private func loadYearData() {
+        months2026 = generateYearMonths(year: selectedYear)
+        months2027 = generateYearMonths(year: selectedYear + 1)
+    }
+    
+    private func generateYearMonths(year: Int) -> [MiniMonthInfo] {
+        let cal = Calendar.current
+        let today = Date()
+        let todayD = cal.component(.day, from: today)
+        let todayM = cal.component(.month, from: today)
+        let todayY = cal.component(.year, from: today)
+        
+        var result: [MiniMonthInfo] = []
+        
+        for m in 1...12 {
+            var comp = DateComponents()
+            comp.year = year
+            comp.month = m
+            comp.day = 1
+            
+            let daysInMonth = (cal.range(of: .day, in: .month, for: cal.date(from: comp) ?? Date())?.count) ?? 30
+            let startWeekday = cal.component(.weekday, from: cal.date(from: comp) ?? Date())
+            let startOffset = (startWeekday == 1) ? 6 : (startWeekday - 2) // T2 = 0
+            
+            var dayInfos: [MiniDayInfo] = []
+            for i in 0..<42 {
+                let dayNumber = i - startOffset + 1
+                if dayNumber >= 1 && dayNumber <= daysInMonth {
+                    let isToday = (dayNumber == todayD && m == todayM && year == todayY)
+                    let lunar = LunarCalendarConverter.shared.convertSolarToLunar(day: dayNumber, month: m, year: year)
+                    let isLunarStart = (lunar.day == 1)
+                    dayInfos.append(MiniDayInfo(id: i, dayNumber: dayNumber, isToday: isToday, isLunarStart: isLunarStart))
+                } else {
+                    dayInfos.append(MiniDayInfo(id: i, dayNumber: nil, isToday: false, isLunarStart: false))
+                }
+            }
+            result.append(MiniMonthInfo(id: m, monthNumber: m, days: dayInfos))
+        }
+        return result
+    }
+    
+    private func yearSection(year: Int, months: [MiniMonthInfo]) -> some View {
         let canChiYear = LunarCalendarConverter.shared.getYearCanChi(year: year)
         return VStack(alignment: .leading, spacing: 14) {
             // Year Header
@@ -120,40 +180,53 @@ public struct YearGridView: View {
             
             // 3x4 Month Grid
             LazyVGrid(columns: columns, spacing: 18) {
-                ForEach(1...12, id: \.self) { month in
-                    monthThumbnail(month: month, year: year)
+                ForEach(months) { monthInfo in
+                    monthCard(monthInfo: monthInfo, year: year)
                 }
             }
         }
     }
     
-    private func monthThumbnail(month: Int, year: Int) -> some View {
-        let isCurrentMonth = (month == Calendar.current.component(.month, from: Date()) && year == Calendar.current.component(.year, from: Date()))
-        let daysCount = numberOfDays(month: month, year: year)
-        let startOffset = firstWeekdayOffset(month: month, year: year)
+    private func monthCard(monthInfo: MiniMonthInfo, year: Int) -> some View {
+        let isCurrentMonth = (monthInfo.monthNumber == Calendar.current.component(.month, from: Date()) && year == Calendar.current.component(.year, from: Date()))
         
         return Button(action: {
             selectedYear = year
-            onSelectMonth(month)
+            onSelectMonth(monthInfo.monthNumber)
             dismiss()
         }) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Tháng \(month)")
+                Text("Tháng \(monthInfo.monthNumber)")
                     .font(.system(size: 16, weight: .heavy, design: .rounded))
                     .foregroundColor(isCurrentMonth ? Color.vnRed : .primary)
                 
-                // Mini 7-column Grid
-                VStack(spacing: 3) {
+                // 6 rows x 7 cols
+                VStack(spacing: 2) {
                     ForEach(0..<6, id: \.self) { row in
                         HStack(spacing: 0) {
                             ForEach(0..<7, id: \.self) { col in
                                 let index = row * 7 + col
-                                let dayNumber = index - startOffset + 1
-                                if dayNumber >= 1 && dayNumber <= daysCount {
-                                    miniDayCell(day: dayNumber, month: month, year: year)
-                                } else {
-                                    Text("")
+                                if index < monthInfo.days.count {
+                                    let day = monthInfo.days[index]
+                                    if let num = day.dayNumber {
+                                        ZStack {
+                                            if day.isToday {
+                                                Circle()
+                                                    .fill(Color.vnRed)
+                                                    .frame(width: 14, height: 14)
+                                            }
+                                            Text("\(num)")
+                                                .font(.system(size: 8.5, weight: day.isToday ? .bold : (day.isLunarStart ? .bold : .medium)))
+                                                .foregroundColor(day.isToday ? .white : (day.isLunarStart ? Color.vnRed : .primary))
+                                                .underline(day.isLunarStart && !day.isToday, color: Color.vnRed)
+                                        }
                                         .frame(maxWidth: .infinity)
+                                        .frame(height: 12)
+                                    } else {
+                                        Text("")
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 12)
+                                    }
                                 }
                             }
                         }
@@ -163,45 +236,5 @@ public struct YearGridView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.plain)
-    }
-    
-    private func miniDayCell(day: Int, month: Int, year: Int) -> some View {
-        let isToday = (day == Calendar.current.component(.day, from: Date()) && month == Calendar.current.component(.month, from: Date()) && year == Calendar.current.component(.year, from: Date()))
-        let lunar = LunarCalendarConverter.shared.convertSolarToLunar(day: day, month: month, year: year)
-        let isLunarMonthStart = (lunar.day == 1)
-        
-        return ZStack {
-            if isToday {
-                Circle()
-                    .fill(Color.vnRed)
-                    .frame(width: 14, height: 14)
-            }
-            
-            Text("\(day)")
-                .font(.system(size: 8.5, weight: isToday ? .bold : (isLunarMonthStart ? .bold : .medium)))
-                .foregroundColor(isToday ? .white : (isLunarMonthStart ? Color.vnRed : .primary))
-                .underline(isLunarMonthStart && !isToday, color: Color.vnRed)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 11)
-    }
-    
-    private func numberOfDays(month: Int, year: Int) -> Int {
-        var comp = DateComponents()
-        comp.year = year
-        comp.month = month
-        guard let date = Calendar.current.date(from: comp),
-              let range = Calendar.current.range(of: .day, in: .month, for: date) else { return 30 }
-        return range.count
-    }
-    
-    private func firstWeekdayOffset(month: Int, year: Int) -> Int {
-        var comp = DateComponents()
-        comp.year = year
-        comp.month = month
-        comp.day = 1
-        guard let date = Calendar.current.date(from: comp) else { return 0 }
-        let weekday = Calendar.current.component(.weekday, from: date)
-        return (weekday == 1) ? 6 : (weekday - 2) // T2 = 0, ..., CN = 6
     }
 }
