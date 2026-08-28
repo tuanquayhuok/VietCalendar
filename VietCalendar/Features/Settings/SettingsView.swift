@@ -70,7 +70,7 @@ public struct SettingsView: View {
                     }
                 }
                 
-                // MARK: - 5. Tác Giả & Nhà Phát Triển (Developer Credit: @dev trongtuan)
+                // MARK: - 5. Tác Giả & Nhà Phát Triển (Developer Credit: by trongtuandev)
                 Section(header: Text(langManager.tr("Nhà Phát Triển", en: "Developer & Creator"))) {
                     HStack(spacing: 14) {
                         Circle()
@@ -83,11 +83,11 @@ public struct SettingsView: View {
                             )
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Dev: @trongtuan")
+                            Text("by trongtuandev")
                                 .font(.headline.bold())
                                 .foregroundColor(.primary)
                             
-                            Text(langManager.tr("Tác giả & Sáng tạo ứng dụng", en: "Creator & Lead Developer"))
+                            Text(langManager.tr("Tác giả & Nhà phát triển ứng dụng", en: "Creator & Lead Developer"))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -95,7 +95,7 @@ public struct SettingsView: View {
                     .padding(.vertical, 4)
                     
                     Button(action: { showingSplashPreview = true }) {
-                        Label(langManager.tr("Xem lại màn hình chào mừng", en: "Replay Welcome Animation"), systemImage: "sparkles")
+                        Label(langManager.tr("Xem lại màn hình mở đầu (5s)", en: "Replay 5s Splash Animation"), systemImage: "play.circle.fill")
                             .font(.subheadline)
                     }
                 }
@@ -105,7 +105,7 @@ public struct SettingsView: View {
                     HStack {
                         Text(langManager.tr("Phiên bản", en: "Version"))
                         Spacer()
-                        Text("1.2.0 (Build 2026)")
+                        Text("1.3.0 (Build 2026)")
                             .foregroundColor(.secondary)
                     }
                     HStack {
