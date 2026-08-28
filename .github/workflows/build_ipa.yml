@@ -26,28 +26,27 @@ jobs:
         run: |
           brew install xcodegen
 
-      - name: Generate Xcode Project & Build Archive
+      - name: Generate Xcode Project & Build App Bundle
         run: |
           xcodegen generate
           
-          xcodebuild archive \
+          mkdir -p build/Payload
+          
+          xcodebuild build \
             -project VietCalendar.xcodeproj \
             -scheme VietCalendar \
             -configuration Release \
             -destination "generic/platform=iOS" \
-            -archivePath build/VietCalendar.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" \
+            CONFIGURATION_BUILD_DIR=build/Payload
+          
+          # Fix POSIX permissions
+          chmod -R 755 build/Payload/VietCalendar.app
 
       - name: Package Payload into Signed-Ready IPA
         run: |
-          mkdir -p build/Payload
-          cp -r build/VietCalendar.xcarchive/Products/Applications/VietCalendar.app build/Payload/
-          
-          # Fix POSIX permissions for 3uTools & Sideloadly compatibility
-          chmod -R 755 build/Payload/VietCalendar.app
-          
           cd build
           zip -r9 ../VietCalendar.ipa Payload/
           cd ..
