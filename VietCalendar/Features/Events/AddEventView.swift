@@ -9,34 +9,23 @@ public struct AddEventView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var eventService = EventService.shared
     
-    public let editingEvent: UserEvent?
+    public var initialDate: Date = Date()
+    public var editingEvent: UserEvent? = nil
     
     @State private var entryType: EventEntryType = .event
-    @State private var title: String
-    @State private var location: String
-    @State private var isAllDay: Bool
-    @State private var startDate: Date
-    @State private var endDate: Date
+    @State private var title: String = ""
+    @State private var location: String = ""
+    @State private var isAllDay: Bool = false
+    @State private var startDate: Date = Date()
+    @State private var endDate: Date = Date().addingTimeInterval(3600)
     @State private var travelTime: String = "Không có"
     @State private var repeatOption: String = "Không"
     @State private var selectedCalendar: String = "Lịch"
     @State private var alertOption: String = "Không có"
     
     public init(initialDate: Date = Date(), editingEvent: UserEvent? = nil) {
+        self.initialDate = initialDate
         self.editingEvent = editingEvent
-        if let ev = editingEvent {
-            _title = State(initialValue: ev.title)
-            _location = State(initialValue: ev.notes)
-            _startDate = State(initialValue: ev.solarDate)
-            _endDate = State(initialValue: ev.solarDate.addingTimeInterval(3600))
-            _isAllDay = State(initialValue: ev.isAllDay)
-        } else {
-            _title = State(initialValue: "")
-            _location = State(initialValue: "")
-            _isAllDay = State(initialValue: false)
-            _startDate = State(initialValue: initialDate)
-            _endDate = State(initialValue: initialDate.addingTimeInterval(3600))
-        }
     }
     
     public var body: some View {
@@ -248,6 +237,18 @@ public struct AddEventView: View {
                             .background(Color.primary.opacity(0.85))
                             .clipShape(Circle())
                     }
+                }
+            }
+            .onAppear {
+                if let ev = editingEvent {
+                    title = ev.title
+                    location = ev.notes
+                    startDate = ev.solarDate
+                    endDate = ev.solarDate.addingTimeInterval(3600)
+                    isAllDay = ev.isAllDay
+                } else {
+                    startDate = initialDate
+                    endDate = initialDate.addingTimeInterval(3600)
                 }
             }
         }
