@@ -14,17 +14,18 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Initialize Xcode Environment
+        run: sudo xcodebuild -runFirstLaunch
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
       - name: Generate Xcode Project
-        run: |
-          xcodegen generate
-          xcodebuild -list -project VietCalendar.xcodeproj
+        run: xcodegen generate
 
-      - name: Build Application Bundle
+      - name: Build Application
         run: |
-          xcodebuild build \
+          xcodebuild clean build \
             -project VietCalendar.xcodeproj \
             -scheme VietCalendar \
             -configuration Release \
@@ -32,13 +33,12 @@ jobs:
             -derivedDataPath build/DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            COMPILER_INDEX_STORE_ENABLE=NO
+            CODE_SIGN_IDENTITY=""
 
       - name: Package Payload and Create IPA
         run: |
           mkdir -p build/Payload
-          find build/DerivedData/Build/Products/Release-iphoneos -name "*.app" -maxdepth 1 -exec cp -r {} build/Payload/ \;
+          cp -R build/DerivedData/Build/Products/Release-iphoneos/VietCalendar.app build/Payload/
           cd build
           zip -qr VietCalendar.ipa Payload
           cd ..
