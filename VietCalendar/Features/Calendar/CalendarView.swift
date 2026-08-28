@@ -2,11 +2,15 @@
 
 public struct CalendarView: View {
     @StateObject private var viewModel = CalendarViewModel()
+    @ObservedObject private var themeManager = ThemeManager.shared
+    @ObservedObject private var langManager = LanguageManager.shared
+    
     @State private var showingDetailSheet = false
     @State private var showingAddEventSheet = false
     
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
-    private let weekdayHeaders = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
+    private let weekdayHeadersVi = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
+    private let weekdayHeadersEn = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     
     public var body: some View {
         NavigationStack {
@@ -45,14 +49,14 @@ public struct CalendarView: View {
                 
                 Spacer()
             }
-            .navigationTitle("Lịch Việt Nam")
+            .navigationTitle(langManager.tr("Lịch Việt Nam", en: "Vietnamese Calendar"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { showingAddEventSheet = true }) {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 20))
-                            .foregroundColor(.vnRed)
+                            .foregroundColor(themeManager.selectedAccent.color)
                     }
                 }
             }
@@ -92,7 +96,7 @@ public struct CalendarView: View {
                         .clipShape(Circle())
                 }
                 
-                Button("Hôm nay") {
+                Button(langManager.tr("Hôm nay", en: "Today")) {
                     withAnimation {
                         viewModel.selectToday()
                     }
@@ -100,8 +104,8 @@ public struct CalendarView: View {
                 .font(.caption.bold())
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color.vnRed.opacity(0.12))
-                .foregroundColor(.vnRed)
+                .background(themeManager.selectedAccent.color.opacity(0.12))
+                .foregroundColor(themeManager.selectedAccent.color)
                 .cornerRadius(16)
                 
                 Button(action: { viewModel.nextMonth() }) {
@@ -116,12 +120,13 @@ public struct CalendarView: View {
     
     // MARK: - Weekday Headers
     private var weekdayHeaderView: some View {
-        HStack {
+        let headers = langManager.selectedLanguage == .vietnamese ? weekdayHeadersVi : weekdayHeadersEn
+        return HStack {
             ForEach(0..<7, id: \.self) { index in
-                Text(weekdayHeaders[index])
+                Text(headers[index])
                     .font(.caption.bold())
                     .frame(maxWidth: .infinity)
-                    .foregroundColor(index >= 5 ? .vnRed : .secondary)
+                    .foregroundColor(index >= 5 ? themeManager.selectedAccent.color : .secondary)
             }
         }
     }
@@ -141,18 +146,17 @@ public struct CalendarView: View {
                 
                 Spacer()
                 
-                Button("Chi tiết") {
+                Button(langManager.tr("Chi tiết", en: "Details")) {
                     showingDetailSheet = true
                 }
                 .font(.subheadline.bold())
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(Color.vnRed)
+                .background(themeManager.selectedAccent.color)
                 .foregroundColor(.white)
                 .cornerRadius(16)
             }
             
-            // Ngày lễ nếu có
             if !day.holidays.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(day.holidays) { holiday in
@@ -163,7 +167,7 @@ public struct CalendarView: View {
                                 .font(.caption.bold())
                                 .foregroundColor(holiday.type.badgeColor)
                             if holiday.isDayOff {
-                                Text("(Nghỉ lễ)")
+                                Text(langManager.tr("(Nghỉ lễ)", en: "(Day off)"))
                                     .font(.caption2)
                                     .foregroundColor(.vnRed)
                             }
@@ -172,7 +176,6 @@ public struct CalendarView: View {
                 }
             }
             
-            // Sự kiện người dùng nếu có
             if !day.events.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach(day.events) { event in
