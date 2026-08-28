@@ -5,91 +5,101 @@ public struct DayCellView: View {
     public let isSelected: Bool
     public let onSelect: () -> Void
     
+    @ObservedObject private var themeManager = ThemeManager.shared
+    
     public var body: some View {
-        Button(action: onSelect) {
+        Button(action: {
+            #if os(iOS)
+            let impact = UIImpactFeedbackGenerator(style: .light)
+            impact.impactOccurred()
+            #endif
+            onSelect()
+        }) {
             VStack(spacing: 3) {
-                // Dương Lịch (Solar Day)
+                // Solar Day Number (Dương Lịch)
                 Text("\(day.solarDay)")
-                    .font(.system(size: 17, weight: day.isToday || isSelected ? .bold : .medium))
-                    .foregroundColor(solarDayTextColor)
+                    .font(.system(size: 17, weight: day.isToday || isSelected ? .bold : .medium, design: .rounded))
+                    .foregroundColor(solarDayColor)
                 
-                // Âm Lịch (Lunar Day)
-                Text(lunarText)
-                    .font(.system(size: 11, weight: day.isFirstDayOfLunarMonth || day.isFullMoon ? .semibold : .regular))
-                    .foregroundColor(lunarDayTextColor)
+                // Lunar Day (Âm Lịch)
+                Text(day.lunarDate.formattedShort)
+                    .font(.system(size: 10, weight: day.lunarDate.day == 1 || day.lunarDate.day == 15 ? .bold : .regular))
+                    .foregroundColor(lunarDayColor)
                 
-                // Indicators (Dấu chấm ngày lễ & sự kiện)
+                // Dots / Indicators
                 HStack(spacing: 3) {
-                    if day.hasHoliday {
+                    if !day.holidays.isEmpty {
                         Circle()
-                            .fill(day.hasDayOff ? Color.vnRed : Color.vnGold)
+                            .fill(Color.vnRed)
                             .frame(width: 4, height: 4)
                     }
-                    if day.hasEvent {
+                    if !day.events.isEmpty {
                         Circle()
-                            .fill(Color.vnBlue)
+                            .fill(Color.vnGold)
                             .frame(width: 4, height: 4)
                     }
-                    if !day.hasHoliday && !day.hasEvent {
-                        Spacer().frame(height: 4)
+                    if day.solarTerm != nullTermPlaceholder {
+                        Circle()
+                            .fill(Color.vnEmerald)
+                            .frame(width: 3.5, height: 3.5)
                     }
                 }
+                .frame(height: 5)
             }
-            .frame(maxWidth: .infinity, minHeight: 52)
-            .padding(.vertical, 4)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(backgroundFill)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? Color.vnRed : Color.clear, lineWidth: 2)
-                    )
-            )
-            .opacity(day.isCurrentMonth ? 1.0 : 0.35)
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .background(cellBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(cellBorder)
         }
         .buttonStyle(.plain)
     }
     
-    private var lunarText: String {
-        if day.isFirstDayOfLunarMonth {
-            return "\(day.lunarDate.day)/\(day.lunarDate.month)"
-        } else if day.isFullMoon {
-            return "15 (Rằm)"
-        } else {
-            return "\(day.lunarDate.day)"
-        }
-    }
+    private var nullTermPlaceholder: String { "" }
     
-    private var solarDayTextColor: Color {
-        if day.isToday {
+    private var solarDayColor: Color {
+        if isSelected {
             return .white
         }
-        if day.hasDayOff {
-            return .vnRed
+        if day.isToday {
+            return themeManager.selectedAccent.color
         }
-        if day.isWeekend {
-            return .red.opacity(0.85)
+        if !day.isCurrentMonth {
+            return Color.secondary.opacity(0.35)
         }
         return .primary
     }
     
-    private var lunarDayTextColor: Color {
-        if day.isToday {
-            return .white.opacity(0.9)
+    private var lunarDayColor: Color {
+        if isSelected {
+            return Color(hex: "#FEF08A")
         }
-        if day.isFirstDayOfLunarMonth || day.isFullMoon {
-            return .vnGold
+        if !day.isCurrentMonth {
+            return Color.secondary.opacity(0.3)
         }
-        return .secondary
-    }
-    
-    private var backgroundFill: Color {
-        if day.isToday {
+        if day.lunarDate.day == 1 || day.lunarDate.day == 15 {
             return Color.vnRed
         }
+        return Color.vnGold
+    }
+    
+    @ViewBuilder
+    private var cellBackground: some View {
         if isSelected {
-            return Color.vnRed.opacity(0.12)
+            themeManager.selectedAccent.color
+                .shadow(color: themeManager.selectedAccent.color.opacity(0.35), radius: 6, x: 0, y: 3)
+        } else if day.isToday {
+            themeManager.selectedAccent.color.opacity(0.12)
+        } else {
+            Color.clear
         }
-        return Color.clear
+    }
+    
+    @ViewBuilder
+    private var cellBorder: some View {
+        if day.isToday && !isSelected {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(themeManager.selectedAccent.color.opacity(0.6), lineWidth: 1.5)
+        }
     }
 }

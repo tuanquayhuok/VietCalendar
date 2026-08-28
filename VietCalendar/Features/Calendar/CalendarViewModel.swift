@@ -8,6 +8,7 @@ public final class CalendarViewModel: ObservableObject {
     @Published public var selectedDate: Date = Date()
     @Published public var daysInMonth: [CalendarDay] = []
     @Published public var selectedDayDetails: CalendarDay?
+    @Published public var selectedYear: Int = Calendar.current.component(.year, from: Date())
     
     private var cancellables = Set<AnyCancellable>()
     private let calendar = Calendar.current
@@ -35,23 +36,46 @@ public final class CalendarViewModel: ObservableObject {
         let today = Date()
         self.currentDate = today
         self.selectedDate = today
+        self.selectedYear = calendar.component(.year, from: today)
         generateMonthGrid(for: today)
         updateSelectedDayDetails()
     }
     
     public func nextMonth() {
         currentDate = currentDate.addingMonth(1)
+        selectedYear = calendar.component(.year, from: currentDate)
         generateMonthGrid(for: currentDate)
     }
     
     public func previousMonth() {
         currentDate = currentDate.addingMonth(-1)
+        selectedYear = calendar.component(.year, from: currentDate)
         generateMonthGrid(for: currentDate)
+    }
+    
+    public func jumpToMonth(month: Int, year: Int) {
+        var comp = DateComponents()
+        comp.year = year
+        comp.month = month
+        comp.day = 1
+        if let newDate = calendar.date(from: comp) {
+            currentDate = newDate
+            selectedDate = newDate
+            selectedYear = year
+            generateMonthGrid(for: newDate)
+            updateSelectedDayDetails()
+        }
+    }
+    
+    public func generateDays() {
+        generateMonthGrid(for: currentDate)
+        updateSelectedDayDetails()
     }
     
     public func selectDay(_ day: CalendarDay) {
         self.selectedDate = day.date
         self.selectedDayDetails = day
+        self.selectedYear = calendar.component(.year, from: day.date)
     }
     
     private func updateSelectedDayDetails() {
@@ -86,11 +110,12 @@ public final class CalendarViewModel: ObservableObject {
         let startOfMonth = baseDate.startOfMonth
         let currentYear = calendar.component(.year, from: baseDate)
         let currentMonth = calendar.component(.month, from: baseDate)
+        self.selectedYear = currentYear
         
         // Tìm ngày đầu tiên hiển thị trên lịch (Thứ Hai)
-        var firstWeekday = calendar.component(.weekday, from: startOfMonth) // 1: CN, 2: T2, ..., 7: T7
+        let firstWeekday = calendar.component(.weekday, from: startOfMonth) // 1: CN, 2: T2, ..., 7: T7
         // Chuyển sang chuẩn VN: T2 = 0, ..., CN = 6
-        var leadingOffset = (firstWeekday == 1) ? 6 : (firstWeekday - 2)
+        let leadingOffset = (firstWeekday == 1) ? 6 : (firstWeekday - 2)
         
         guard let startDate = calendar.date(byAdding: .day, value: -leadingOffset, to: startOfMonth) else { return }
         
