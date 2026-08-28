@@ -142,10 +142,10 @@ public struct CalendarView: View {
                 // Menu View Style (Matching Image 2)
                 Menu {
                     Button(action: { viewStyle = .compact }) {
-                        Label("Nhỏ gọn", systemImage: "capsule")
+                        Label("Nhỏ gọn", systemImage: "rectangle.compress.vertical")
                     }
                     Button(action: { viewStyle = .stacked }) {
-                        Label("Xếp chồng", systemImage: "square.2.layers.3d")
+                        Label("Xếp chồng", systemImage: "square.stack.3d.up")
                     }
                     Button(action: { viewStyle = .detailed }) {
                         Label("Chi tiết", systemImage: "rectangle.stack")
@@ -154,12 +154,7 @@ public struct CalendarView: View {
                     Divider()
                     
                     Button(action: { viewStyle = .list }) {
-                        HStack {
-                            Text("Danh sách")
-                            if viewStyle == .list {
-                                Image(systemName: "checkmark")
-                            }
-                        }
+                        Label("Danh sách", systemImage: "list.bullet")
                     }
                 } label: {
                     Image(systemName: "list.bullet.rectangle.portrait")
