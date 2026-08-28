@@ -6,6 +6,11 @@ public struct YearGridView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var themeManager = ThemeManager.shared
     
+    public init(selectedYear: Binding<Int>, onSelectMonth: @escaping (Int) -> Void) {
+        self._selectedYear = selectedYear
+        self.onSelectMonth = onSelectMonth
+    }
+    
     private let columns = [
         GridItem(.flexible(), spacing: 14),
         GridItem(.flexible(), spacing: 14),
@@ -16,7 +21,6 @@ public struct YearGridView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Header chọn năm
                     HStack {
                         Button(action: {
                             selectedYear -= 1
@@ -48,7 +52,6 @@ public struct YearGridView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 10)
                     
-                    // Lưới 12 Tháng
                     LazyVGrid(columns: columns, spacing: 16) {
                         ForEach(1...12, id: \.self) { month in
                             Button(action: {
@@ -60,7 +63,6 @@ public struct YearGridView: View {
                                         .font(.system(size: 16, weight: .bold, design: .rounded))
                                         .foregroundColor(themeManager.selectedAccent.color)
                                     
-                                    // Mini preview dots
                                     RoundedRectangle(cornerRadius: 12, style: .continuous)
                                         .fill(Color.vnSurface)
                                         .frame(height: 75)

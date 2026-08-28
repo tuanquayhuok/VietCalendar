@@ -6,6 +6,10 @@ public struct CalendarSearchView: View {
     @ObservedObject private var themeManager = ThemeManager.shared
     public let onSelectDate: (Date) -> Void
     
+    public init(onSelectDate: @escaping (Date) -> Void) {
+        self.onSelectDate = onSelectDate
+    }
+    
     private var filteredHolidays: [Holiday] {
         if searchText.isEmpty {
             return HolidayService.shared.holidays
