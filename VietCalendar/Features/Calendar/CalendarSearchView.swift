@@ -8,9 +8,9 @@ public struct CalendarSearchView: View {
     
     private var filteredHolidays: [Holiday] {
         if searchText.isEmpty {
-            return HolidayService.allHolidays
+            return HolidayService.shared.holidays
         }
-        return HolidayService.allHolidays.filter {
+        return HolidayService.shared.holidays.filter {
             $0.name.localizedCaseInsensitiveContains(searchText)
         }
     }
