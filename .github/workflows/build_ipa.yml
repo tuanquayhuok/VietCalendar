@@ -56,10 +56,7 @@ jobs:
               --output-format human-readable-text || true
           fi
           
-          # Ad-hoc Code Signing (Allows Sideloadly, Scarlet, TrollStore, 3uTools to re-sign or run directly)
-          codesign --force --deep --sign - build/Payload/VietCalendar.app
-          
-          # Fix POSIX permissions
+          # Fix POSIX permissions for 3uTools & Sideloadly compatibility
           chmod -R 755 build/Payload/VietCalendar.app
 
       - name: Package Payload into Signed-Ready IPA
