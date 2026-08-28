@@ -1,8 +1,10 @@
 ﻿import SwiftUI
 
-public enum CalendarDisplayMode {
-    case grid
-    case list
+public enum CalendarViewStyle: String, CaseIterable {
+    case compact = "Nhỏ gọn"
+    case stacked = "Xếp chồng"
+    case detailed = "Chi tiết"
+    case list = "Danh sách"
 }
 
 public struct CalendarView: View {
@@ -10,7 +12,7 @@ public struct CalendarView: View {
     @ObservedObject private var themeManager = ThemeManager.shared
     @ObservedObject private var langManager = LanguageManager.shared
     
-    @State private var displayMode: CalendarDisplayMode = .grid
+    @State private var viewStyle: CalendarViewStyle = .detailed
     @State private var showingYearGrid = false
     @State private var showingSearch = false
     @State private var showingAddEvent = false
@@ -25,7 +27,7 @@ public struct CalendarView: View {
     public var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // MARK: - 1. Top Modern Floating Capsule Toolbar (Chuẩn thiết kế Apple)
+                // MARK: - 1. Top Modern Floating Capsule Toolbar (Matching User Mockup)
                 topCapsuleToolbar
                     .padding(.horizontal, 16)
                     .padding(.top, 8)
@@ -35,14 +37,14 @@ public struct CalendarView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
                 
-                if displayMode == .grid {
+                if viewStyle != .list {
                     // MARK: - 3. Weekday Header
                     weekdayHeaderView
                         .padding(.horizontal, 14)
                         .padding(.top, 10)
                     
                     // MARK: - 4. 42-Day Month Grid (Hỗ trợ vuốt ngang chuyển tháng)
-                    LazyVGrid(columns: columns, spacing: 6) {
+                    LazyVGrid(columns: columns, spacing: viewStyle == .compact ? 2 : 6) {
                         ForEach(viewModel.daysInMonth) { day in
                             let isSelected = Calendar.current.isDate(day.date, inSameDayAs: viewModel.selectedDate)
                             DayCellView(day: day, isSelected: isSelected) {
@@ -67,14 +69,16 @@ public struct CalendarView: View {
                             }
                     )
                     
-                    Divider()
-                        .padding(.top, 12)
-                    
-                    // MARK: - 5. Card Ngày Đang Chọn
-                    if let selected = viewModel.selectedDayDetails {
-                        selectedDayCard(selected)
-                            .padding(.horizontal, 16)
+                    if viewStyle == .detailed {
+                        Divider()
                             .padding(.top, 10)
+                        
+                        // Card Ngày Đang Chọn
+                        if let selected = viewModel.selectedDayDetails {
+                            selectedDayCard(selected)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 8)
+                        }
                     }
                 } else {
                     // MARK: - 3. Agenda List View Mode
@@ -106,7 +110,7 @@ public struct CalendarView: View {
         }
     }
     
-    // MARK: - Top Floating Capsule Toolbar (Matching User Mockup)
+    // MARK: - Top Floating Capsule Toolbar (Matching User Images 1, 2, 3, 4)
     private var topCapsuleToolbar: some View {
         HStack {
             // Left Pill: `< 2026`
@@ -133,24 +137,37 @@ public struct CalendarView: View {
             
             Spacer()
             
-            // Right Pill: `[List / Grid] [Search] [+]`
-            HStack(spacing: 20) {
-                // Toggle List/Grid View
-                Button(action: {
-                    #if os(iOS)
-                    let impact = UIImpactFeedbackGenerator(style: .light)
-                    impact.impactOccurred()
-                    #endif
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                        displayMode = (displayMode == .grid) ? .list : .grid
+            // Right Pill: `[Menu View Style] [Search] [+]`
+            HStack(spacing: 18) {
+                // Menu View Style (Matching Image 2)
+                Menu {
+                    Button(action: { viewStyle = .compact }) {
+                        Label("Nhỏ gọn", systemImage: "capsule")
                     }
-                }) {
-                    Image(systemName: displayMode == .grid ? "list.bullet.rectangle.portrait" : "calendar")
+                    Button(action: { viewStyle = .stacked }) {
+                        Label("Xếp chồng", systemImage: "square.2.layers.3d")
+                    }
+                    Button(action: { viewStyle = .detailed }) {
+                        Label("Chi tiết", systemImage: "rectangle.stack")
+                    }
+                    
+                    Divider()
+                    
+                    Button(action: { viewStyle = .list }) {
+                        HStack {
+                            Text("Danh sách")
+                            if viewStyle == .list {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "list.bullet.rectangle.portrait")
                         .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(displayMode == .list ? themeManager.selectedAccent.color : .primary)
+                        .foregroundColor(.primary)
                 }
                 
-                // Search Button
+                // Search Button (Matching Image 4)
                 Button(action: {
                     showingSearch = true
                 }) {
@@ -159,13 +176,13 @@ public struct CalendarView: View {
                         .foregroundColor(.primary)
                 }
                 
-                // Add Event (+) Button
+                // Add Event (+) Button (Matching Image 3)
                 Button(action: {
                     showingAddEvent = true
                 }) {
                     Image(systemName: "plus")
                         .font(.system(size: 17, weight: .bold))
-                        .foregroundColor(themeManager.selectedAccent.color)
+                        .foregroundColor(.primary)
                 }
             }
             .padding(.horizontal, 18)
@@ -254,7 +271,6 @@ public struct CalendarView: View {
                 ForEach(viewModel.daysInMonth.filter { $0.isCurrentMonth }) { day in
                     let isToday = day.isToday
                     HStack(spacing: 14) {
-                        // Date Badge
                         VStack(spacing: 2) {
                             Text("\(day.solarDay)")
                                 .font(.system(size: 20, weight: .heavy, design: .rounded))
@@ -267,7 +283,6 @@ public struct CalendarView: View {
                         .background(isToday ? themeManager.selectedAccent.color : Color.vnSurface)
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         
-                        // Event & Details
                         VStack(alignment: .leading, spacing: 4) {
                             Text(day.date.formattedVietnamese(dateStyle: .medium))
                                 .font(.headline)

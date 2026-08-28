@@ -21,16 +21,23 @@ public struct DayCellView: View {
             #endif
             onSelect()
         }) {
-            VStack(spacing: 3) {
+            VStack(spacing: 2) {
                 // Solar Day Number (Dương Lịch)
                 Text("\(day.solarDay)")
                     .font(.system(size: 17, weight: day.isToday || isSelected ? .bold : .medium, design: .rounded))
                     .foregroundColor(solarDayColor)
                 
-                // Lunar Day (Âm Lịch)
-                Text(day.lunarDate.formattedShort)
-                    .font(.system(size: 10, weight: day.lunarDate.day == 1 || day.lunarDate.day == 15 ? .bold : .regular))
-                    .foregroundColor(lunarDayColor)
+                // Lunar Day (Âm Lịch: Mùng 1 hiển thị "Thg X" có gạch chân đỏ như Apple Lịch)
+                if day.lunarDate.day == 1 {
+                    Text("Thg \(day.lunarDate.month)")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(isSelected ? Color(hex: "#FEF08A") : Color.vnRed)
+                        .underline(true, color: isSelected ? Color(hex: "#FEF08A") : Color.vnRed)
+                } else {
+                    Text(day.lunarDate.formattedShort)
+                        .font(.system(size: 10, weight: day.lunarDate.day == 15 ? .bold : .regular))
+                        .foregroundColor(lunarDayColor)
+                }
                 
                 // Dots / Indicators
                 HStack(spacing: 3) {
@@ -50,7 +57,7 @@ public struct DayCellView: View {
                             .frame(width: 3.5, height: 3.5)
                     }
                 }
-                .frame(height: 5)
+                .frame(height: 4)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 52)
@@ -81,10 +88,10 @@ public struct DayCellView: View {
         if !day.isCurrentMonth {
             return Color.secondary.opacity(0.3)
         }
-        if day.lunarDate.day == 1 || day.lunarDate.day == 15 {
+        if day.lunarDate.day == 15 {
             return Color.vnRed
         }
-        return Color.vnGold
+        return Color.secondary.opacity(0.85)
     }
     
     @ViewBuilder
