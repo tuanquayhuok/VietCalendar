@@ -153,6 +153,10 @@ struct DayCounterView: View {
     @State private var targetDate = Date().addingTimeInterval(86400 * 30)
     @State private var title = "Kỷ niệm đặc biệt"
     
+    private var daysDifference: Int {
+        Calendar.current.dateComponents([.day], from: Date(), to: targetDate).day ?? 0
+    }
+    
     var body: some View {
         VStack(spacing: 20) {
             TextField("Tên sự kiện kỷ niệm", text: $title)
@@ -167,8 +171,7 @@ struct DayCounterView: View {
                 .background(Color(UIColor.secondarySystemGroupedBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 16))
             
-            let days = Calendar.current.dateComponents([.day], from: Date(), to: targetDate).day ?? 0
-            Text("Còn \(abs(days)) ngày \(days >= 0 ? "nữa" : "trước")")
+            Text("Còn \(abs(daysDifference)) ngày \(daysDifference >= 0 ? "nữa" : "trước")")
                 .font(.system(size: 28, weight: .bold, design: .rounded))
                 .foregroundColor(.blue)
         }
@@ -180,24 +183,7 @@ struct WorkdaysCalcView: View {
     @State private var startDate = Date()
     @State private var endDate = Date().addingTimeInterval(86400 * 30)
     
-    var body: some View {
-        VStack(spacing: 20) {
-            DatePicker("Từ ngày", selection: $startDate, displayedComponents: [.date])
-            DatePicker("Đến ngày", selection: $endDate, displayedComponents: [.date])
-            
-            let workdays = calculateWorkdays()
-            VStack(spacing: 8) {
-                Text("\(workdays)").font(.system(size: 56, weight: .black, design: .rounded)).foregroundColor(.blue)
-                Text("Ngày làm việc thực tế (trừ T7, CN)").font(.subheadline).foregroundColor(.secondary)
-            }
-            .padding(24)
-            .background(Color.blue.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 18))
-        }
-        .padding()
-    }
-    
-    private func calculateWorkdays() -> Int {
+    private var workdaysCount: Int {
         var count = 0
         var current = startDate
         let cal = Calendar.current
@@ -208,14 +194,33 @@ struct WorkdaysCalcView: View {
         }
         return count
     }
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            DatePicker("Từ ngày", selection: $startDate, displayedComponents: [.date])
+            DatePicker("Đến ngày", selection: $endDate, displayedComponents: [.date])
+            
+            VStack(spacing: 8) {
+                Text("\(workdaysCount)").font(.system(size: 56, weight: .black, design: .rounded)).foregroundColor(.blue)
+                Text("Ngày làm việc thực tế (trừ T7, CN)").font(.subheadline).foregroundColor(.secondary)
+            }
+            .padding(24)
+            .background(Color.blue.opacity(0.1))
+            .clipShape(RoundedRectangle(cornerRadius: 18))
+        }
+        .padding()
+    }
 }
 
 struct WeekNumberView: View {
+    private var currentWeek: Int {
+        Calendar.current.component(.weekOfYear, from: Date())
+    }
+    
     var body: some View {
-        let week = Calendar.current.component(.weekOfYear, from: Date())
         VStack(spacing: 16) {
             Text("Tuần thứ").font(.headline).foregroundColor(.secondary)
-            Text("\(week)").font(.system(size: 72, weight: .black, design: .rounded)).foregroundColor(.blue)
+            Text("\(currentWeek)").font(.system(size: 72, weight: .black, design: .rounded)).foregroundColor(.blue)
             Text("Trong tổng số 52 tuần của năm 2026").font(.subheadline).foregroundColor(.secondary)
         }
         .padding()

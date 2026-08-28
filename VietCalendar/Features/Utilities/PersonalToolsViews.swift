@@ -117,18 +117,17 @@ struct TodoListView: View {
             
             List {
                 ForEach(items, id: \.self) { item in
-                    let isDone = completedItems.contains(item)
                     Button(action: {
-                        if isDone { completedItems.remove(item) }
+                        if completedItems.contains(item) { completedItems.remove(item) }
                         else { completedItems.insert(item) }
                     }) {
                         HStack(spacing: 12) {
-                            Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
+                            Image(systemName: completedItems.contains(item) ? "checkmark.circle.fill" : "circle")
                                 .font(.title3)
-                                .foregroundColor(isDone ? .purple : .secondary)
+                                .foregroundColor(completedItems.contains(item) ? .purple : .secondary)
                             Text(item)
-                                .strikethrough(isDone, color: .secondary)
-                                .foregroundColor(isDone ? .secondary : .primary)
+                                .strikethrough(completedItems.contains(item), color: .secondary)
+                                .foregroundColor(completedItems.contains(item) ? .secondary : .primary)
                         }
                     }
                     .buttonStyle(.plain)
