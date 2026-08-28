@@ -193,17 +193,14 @@ public struct AddEventView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(action: {
                         if !title.isEmpty {
-                            let cal = Calendar.current
-                            let comp = cal.dateComponents([.day, .month, .year], from: startDate)
                             let newEvent = UserEvent(
                                 title: title,
                                 notes: location,
-                                day: comp.day ?? 1,
-                                month: comp.month ?? 1,
-                                year: comp.year ?? 2026,
+                                solarDate: startDate,
                                 isLunarBased: false,
                                 repeatType: .none,
                                 colorHex: "#2563EB",
+                                isAllDay: isAllDay,
                                 hasReminder: alertOption != "Không có"
                             )
                             eventService.addEvent(newEvent)
